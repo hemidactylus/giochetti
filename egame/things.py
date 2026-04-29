@@ -1,7 +1,11 @@
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from egame.geometry import Scaler
 from egame.type_definitions import Drawable, FPair
+
+if TYPE_CHECKING:
+    from egame.context import Context
 
 
 class Thing:
@@ -12,6 +16,7 @@ class Thing:
     _sprite_offsets_scaled: dict[str, FPair]
     t_s: float
     t0_s: float
+    name: str
     scaler: Scaler
 
     def __init__(
@@ -22,6 +27,7 @@ class Thing:
         sprites: dict[str, Drawable],
         sprite_offsets: dict[str, FPair],
         t0_s: float,
+        name: str = "",
         scaler: Scaler,
     ) -> None:
         self.lsize = lsize
@@ -34,6 +40,7 @@ class Thing:
             sk: (self.scaler.r_x(soffset[0]), self.scaler.r_y(soffset[1]))
             for sk, soffset in self.sprite_offsets.items()
         }
+        self.name = name  # TODO autogen
         self.update_lpos(lpos)
 
     def update_lpos(self, lpos: FPair) -> None:
@@ -50,6 +57,63 @@ class Thing:
     def drawables(self) -> Iterable[Drawable]:
         yield from self.sprites.values()
 
-    def dies_on_update(self, dt: float, t_s: float) -> bool:
+    def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
         self.t_s += t_s - self.t0_s
+        return False
+
+    def die(self) -> None:
+        for sprite in self.sprites.values():
+            sprite.delete()
+
+
+class PhysicsThing(Thing):
+    lv: FPair
+    feels_g: bool
+
+    def __init__(
+        self,
+        *,
+        lpos: FPair,
+        lsize: FPair,
+        sprites: dict[str, Drawable],
+        sprite_offsets: dict[str, FPair],
+        t0_s: float,
+        name: str = "",
+        lv: FPair,
+        feels_g: bool,
+        scaler: Scaler,
+    ) -> None:
+        Thing.__init__(
+            self=self,
+            lpos=lpos,
+            lsize=lsize,
+            sprites=sprites,
+            sprite_offsets=sprite_offsets,
+            t0_s=t0_s,
+            name=name,
+            scaler=scaler,
+        )
+        self.lv = lv
+        self.feels_g = feels_g
+
+    def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
+        if self.feels_g:
+            self.lv = (
+                self.lv[0] + ctx.lg[0] * dt,
+                self.lv[1] + ctx.lg[1] * dt,
+            )
+            # TODO g from context
+        new_lpos = (
+            self.lpos[0] + self.lv[0] * dt,
+            self.lpos[1] + self.lv[1] * dt,
+        )
+        self.update_lpos(new_lpos)
+        if new_lpos[0] < 0:
+            return True
+        if new_lpos[1] < 0:
+            return True
+        if new_lpos[0] - self.lsize[0] > ctx.lsize[0]:
+            return True
+        if new_lpos[1] - self.lsize[1] > ctx.lsize[1]:
+            return True
         return False

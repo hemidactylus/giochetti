@@ -16,14 +16,20 @@ class Context:
     title: str
     scaler: Scaler
     started: bool
+    lg: FPair
+    t_factor: float
     t_s: float
     things: list[Thing]
-    _okp: Callable[[int, int], Literal[True] | None] | None
+    _okp: Callable[["Context", int, int], Literal[True] | None] | None
     _window: pyglet.window.Window
 
-    def __init__(self, *, size: IPair, lsize: FPair, title: str = "") -> None:
+    def __init__(
+        self, *, size: IPair, lsize: FPair, lg: FPair = (0.0, 0.0), time_factor: float = 1.0, title: str = ""
+    ) -> None:
         self.size = size
         self.lsize = lsize
+        self.lg = lg
+        self.time_factor = time_factor
         self.title = title
         self.started = False
         self._okp = None
@@ -32,7 +38,9 @@ class Context:
         self.scaler = Scaler(size=size, lsize=lsize)
         self._make_window()
 
-    def on_key_press(self, okp: Callable[[int, int], Literal[True] | None]) -> None:
+    def on_key_press(
+        self, okp: Callable[["Context", int, int], Literal[True] | None]
+    ) -> None:
         if self.started:
             raise ValueError("Already started")
         self._okp = okp
@@ -59,7 +67,7 @@ class Context:
             @self._window.event
             def on_key_press(symbol: int, modifiers: int) -> Literal[True] | None:
                 if self._okp is not None:
-                    return self._okp(symbol, modifiers)
+                    return self._okp(self, symbol, modifiers)
                 else:
                     return None
 
@@ -70,9 +78,21 @@ class Context:
                 for drawable in thing.drawables():
                     drawable.draw()
 
-        def update(dt: float) -> None:
-            # TODO evolve things
+        def update(dt0: float) -> None:
+            dt = dt0 * self.time_factor
             self.t_s += dt
+            dying_indices: set[int] = set()
+            for thing_i, thing in enumerate(self.things):
+                if thing.dies_on_update(ctx=self, dt=dt, t_s=self.t_s):
+                    dying_indices.add(thing_i)
+            if dying_indices:
+                for dying_i in dying_indices:
+                    self.things[dying_i].die()
+                self.things = [
+                    thing
+                    for thing_i, thing in enumerate(self.things)
+                    if thing_i not in dying_indices
+                ]
 
         pyglet.clock.schedule_interval(update, 1 / 60.0)
         self.started = True
