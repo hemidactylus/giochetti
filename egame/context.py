@@ -24,7 +24,13 @@ class Context:
     _window: pyglet.window.Window
 
     def __init__(
-        self, *, size: IPair, lsize: FPair, lg: FPair = (0.0, 0.0), time_factor: float = 1.0, title: str = ""
+        self,
+        *,
+        size: IPair,
+        lsize: FPair,
+        lg: FPair = (0.0, 0.0),
+        time_factor: float = 1.0,
+        title: str = "",
     ) -> None:
         self.size = size
         self.lsize = lsize
@@ -46,6 +52,7 @@ class Context:
         self._okp = okp
 
     def push_thing(self, thing: Thing) -> None:
+        thing.t0_s = self.t_s  # TODO make a setter method
         self.things.append(thing)
 
     def _make_window(self) -> None:

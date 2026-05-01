@@ -97,6 +97,8 @@ class PhysicsThing(Thing):
         self.feels_g = feels_g
 
     def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
+        if Thing.dies_on_update(self, ctx=ctx, dt=dt, t_s=t_s):
+            return True
         if self.feels_g:
             self.lv = (
                 self.lv[0] + ctx.lg[0] * dt,

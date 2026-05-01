@@ -10,13 +10,16 @@ from egame.type_definitions import FPair
 
 class Boo(Thing):
     def __init__(self, scaler: Scaler) -> None:
-        ball = pyglet.shapes.Circle(0, 0, scaler.r_x(1), color=(255, 0, 0, 255))
+        car_img = pyglet.image.load("car.png")
+        car_sprite = pyglet.sprite.Sprite(car_img, x=0, y=0)
+        car_sprite.scale_x = scaler.r_x(3) / car_img.width
+        car_sprite.scale_y = scaler.r_y(3) / car_img.height
         Thing.__init__(
             self,
             lpos=(5, 5),
-            lsize=(1, 1),
-            sprites={"0": ball},
-            sprite_offsets={"0": (0, 0)},
+            lsize=(3, 3),
+            sprites={"0": car_sprite},
+            sprite_offsets={"0": (-1.5, -1.5)},
             t0_s=0.0,
             name="boo",
             scaler=scaler,
