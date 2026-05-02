@@ -10,26 +10,30 @@ from egame.things import PhysicsThing, Thing
 from egame.type_definitions import FPair
 import time
 
-class Boo(Thing):
+CAR_LSIZE = (2, 1.4)
+CAR_STEP = 0.5
+FOOD_LSIDE = 0.5
+
+class Car(Thing):
     def __init__(self, scaler: Scaler) -> None:
         self.ini = time.time()
         car_img = pyglet.image.load("car.png")
         car_sprite = pyglet.sprite.Sprite(car_img, x=0, y=0)
-        car_sprite.scale_x = scaler.r_x(2) / car_img.width
-        car_sprite.scale_y = scaler.r_y(1.4) / car_img.height
+        car_sprite.scale_x = scaler.r_x(CAR_LSIZE[0]) / car_img.width
+        car_sprite.scale_y = scaler.r_y(CAR_LSIZE[1]) / car_img.height
         Thing.__init__(
             self,
             lpos=(5, 5),
-            lsize=(3, 3),
+            lsize=CAR_LSIZE,
             sprites={"0": car_sprite},
-            sprite_offsets={"0": (-1.5, -1.5)},
+            sprite_offsets={"0": (0, 0)},
             t0_s=0.0,
-            name="boo",
+            name="car",
             scaler=scaler,
         )
 
 
-class Baa(PhysicsThing):
+class Poo(PhysicsThing):
     def __init__(self, lpos: FPair, scaler: Scaler) -> None:
         ball = pyglet.shapes.Circle(0, 0, scaler.r_x(0.3), color=(90, 47, 7, 255))
         PhysicsThing.__init__(
@@ -53,12 +57,12 @@ class Food(Thing):
     terminating: bool
 
     def __init__(self, lpos: FPair, scaler: Scaler) -> None:
-        square = pyglet.shapes.Rectangle(0, 0, scaler.r_x(0.3), scaler.r_x(0.3), color=(44, 210, 130, 255))
+        square = pyglet.shapes.Rectangle(0, 0, scaler.r_x(FOOD_LSIDE), scaler.r_x(FOOD_LSIDE), color=(44, 210, 130, 255))
         self.terminating = False
         Thing.__init__(
             self,
             lpos=lpos,
-            lsize=(0.3, 0.3),
+            lsize=(FOOD_LSIDE, FOOD_LSIDE),
             sprites={"0": square},
             sprite_offsets={"0": (0, 0)},
             t0_s=0.0,
@@ -78,47 +82,46 @@ class Food(Thing):
 if __name__ == "__main__":
     ctx0 = Context(size=(1200, 1200), lsize=(10.0, 10.0), lg=(0.0, -10.0))
 
-    boo = Boo(ctx0.scaler)
-    foo = Food(
+    car = Car(ctx0.scaler)
+    food = Food(
         (
             random.random() * 10.0,
             random.random() * 10.0,
         ),
         ctx0.scaler,
     )
-    ctx0.push_thing(boo)
-    ctx0.push_thing(foo)
+    ctx0.push_thing(car)
+    ctx0.push_thing(food)
 
     def on_k_p(ctx: Context, symbol: int, modifiers: int) -> Literal[True] | None:
-        ball_n_pos = boo.lpos
+        car_n_lpos = car.lpos
         if symbol == pyglet.window.key.UP:
-            ball_n_pos = (ball_n_pos[0], ball_n_pos[1] + 0.5)
+            car_n_lpos = (car_n_lpos[0], car_n_lpos[1] + 0.5)
         elif symbol == pyglet.window.key.DOWN:
-            ball_n_pos = (ball_n_pos[0], ball_n_pos[1] - 0.5)
+            car_n_lpos = (car_n_lpos[0], car_n_lpos[1] - 0.5)
         elif symbol == pyglet.window.key.LEFT:
-            ball_n_pos = (ball_n_pos[0] - 0.5, ball_n_pos[1])
+            car_n_lpos = (car_n_lpos[0] - 0.5, car_n_lpos[1])
         elif symbol == pyglet.window.key.RIGHT:
-            ball_n_pos = (ball_n_pos[0] + 0.5, ball_n_pos[1])
+            car_n_lpos = (car_n_lpos[0] + 0.5, car_n_lpos[1])
         elif symbol == pyglet.window.key.A:
-            ctx.push_thing(Baa(boo.lpos, ctx.scaler))
-            ela = time.time() - boo.ini
+            ctx.push_thing(Poo(car.lpos, ctx.scaler))
+            ela = time.time() - car.ini
 
-        if ball_n_pos != boo.lpos:
+        if car_n_lpos != car.lpos:
+            car.update_lpos(car_n_lpos)
             # has eaten food?
             foo_delta = (
-                abs(foo.lpos[0] + foo.sprite_offsets["0"][0] - boo.lpos[0]),
-                abs(foo.lpos[1] + foo.sprite_offsets["0"][1] - boo.lpos[1]),
+                abs(food.lpos[0] - car.lcenter[0]),
+                abs(food.lpos[1] - car.lcenter[1]),
             )
-            # TODO bug with position (-> expose center position on a main sprite?)
-            if foo_delta[0] <= 0.7 and foo_delta[1] <= 1.2:
-                ctx.push_thing(Baa(boo.lpos, ctx.scaler))
-                new_foo_lpos = (
+            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.4:
+                ctx.push_thing(Poo(car.lcenter, ctx.scaler))
+                food_n_lpos = (
                     random.random() * 10.0,
                     random.random() * 10.0,
                 )
-                foo.update_lpos(new_foo_lpos)
-            #
-            boo.update_lpos(ball_n_pos)
+                food.update_lpos(food_n_lpos)
+            
 
         return None
 

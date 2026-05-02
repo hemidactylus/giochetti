@@ -43,6 +43,13 @@ class Thing:
         self.name = name  # TODO autogen
         self.update_lpos(lpos)
 
+    @property
+    def lcenter(self) -> FPair:
+        return (
+            self.lpos[0] + 0.5 * self.lsize[0],
+            self.lpos[1] + 0.5 * self.lsize[1],
+        )
+
     def update_lpos(self, lpos: FPair) -> None:
         self.lpos = lpos
         self.update_pos()
