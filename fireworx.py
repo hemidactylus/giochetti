@@ -1,18 +1,18 @@
-import random
 from typing import Literal
 
 import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
+from egame.randomize import fluctuate, msrnd
 from egame.things import PhysicsThing
 from egame.type_definitions import FPair
 
-MAX_GEN = 5
+MAX_GEN = 3
 NUM_FRAGMENTS = 20
 DV_MOD = 12.0
-GEN_LC_BASE = 25
-GEN_LC_DELTA = 3
+GEN_LC_BASE = 1.3
+GEN_LC_DELTA = 0.35
 
 LSIZE = (16, 10)
 SIZE = (1600, 1000)
@@ -69,14 +69,14 @@ class Exploder(PhysicsThing):
                     lc0 = GEN_LC_BASE - self.gen * GEN_LC_DELTA
                 for i in range(NUM_FRAGMENTS):
                     new_v = (
-                        self.lv[0] + DV_MOD * (2 * random.random() - 1),
-                        self.lv[1] + DV_MOD * (2 * random.random() - 1),
+                        self.lv[0] + msrnd(DV_MOD),
+                        self.lv[1] + msrnd(DV_MOD),
                     )
                     e0 = Exploder(
                         lpos=self.lpos,
                         lv=new_v,
                         gen=self.gen + 1,
-                        lifecycle_s=(lc0 * (1.0 + 0.3 * (2 * random.random() - 1)))  # type: ignore[operator]
+                        lifecycle_s=lc0 * fluctuate(1.0, 0.3)  # type: ignore[operator]
                         if lc0
                         else lc0,
                         scaler=ctx.scaler,
@@ -91,9 +91,9 @@ if __name__ == "__main__":
 
     def on_k_p(ctx: Context, symbol: int, modifiers: int) -> Literal[True] | None:
         if symbol == pyglet.window.key.SPACE:
-            x0 = random.random() * LSIZE[0]
-            vx = (2 * random.random() - 1) * 7.0
-            vy = 10 + 2.0 * (2 * random.random() - 1.0)
+            x0 = fluctuate(0.5 * LSIZE[0], 0.35 * LSIZE[0])
+            vx = msrnd(8.0)
+            vy = fluctuate(11, 3.0)
 
             e0 = Exploder(
                 lpos=(x0, 0),

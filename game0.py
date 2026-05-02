@@ -1,18 +1,18 @@
-import random  # TODO rnd lib
-
+import time
 from typing import Literal
 
 import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
+from egame.randomize import mrnd
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import FPair
-import time
 
 CAR_LSIZE = (2, 1.4)
 CAR_STEP = 0.5
 FOOD_LSIDE = 0.5
+
 
 class Car(Thing):
     def __init__(self, scaler: Scaler) -> None:
@@ -57,7 +57,13 @@ class Food(Thing):
     terminating: bool
 
     def __init__(self, lpos: FPair, scaler: Scaler) -> None:
-        square = pyglet.shapes.Rectangle(0, 0, scaler.r_x(FOOD_LSIDE), scaler.r_x(FOOD_LSIDE), color=(44, 210, 130, 255))
+        square = pyglet.shapes.Rectangle(
+            0,
+            0,
+            scaler.r_x(FOOD_LSIDE),
+            scaler.r_x(FOOD_LSIDE),
+            color=(44, 210, 130, 255),
+        )
         self.terminating = False
         Thing.__init__(
             self,
@@ -85,8 +91,8 @@ if __name__ == "__main__":
     car = Car(ctx0.scaler)
     food = Food(
         (
-            random.random() * 10.0,
-            random.random() * 10.0,
+            mrnd(10.0),
+            mrnd(10.0),
         ),
         ctx0.scaler,
     )
@@ -105,11 +111,10 @@ if __name__ == "__main__":
             car_n_lpos = (car_n_lpos[0] + 0.5, car_n_lpos[1])
         elif symbol == pyglet.window.key.A:
             ctx.push_thing(Poo(car.lpos, ctx.scaler))
-            ela = time.time() - car.ini
 
         if car_n_lpos != car.lpos:
             car.update_lpos(car_n_lpos)
-            # has eaten food?
+            # eats?
             foo_delta = (
                 abs(food.lpos[0] - car.lcenter[0]),
                 abs(food.lpos[1] - car.lcenter[1]),
@@ -117,11 +122,10 @@ if __name__ == "__main__":
             if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.4:
                 ctx.push_thing(Poo(car.lcenter, ctx.scaler))
                 food_n_lpos = (
-                    random.random() * 10.0,
-                    random.random() * 10.0,
+                    mrnd(10.0),
+                    mrnd(10.0),
                 )
                 food.update_lpos(food_n_lpos)
-            
 
         return None
 
