@@ -25,3 +25,7 @@ def mrnd(maximum: float) -> float:
 
 def rrnd(range: FPair) -> float:
     return fluctuate(range[0], range[1] - range[0])
+
+
+def i_mrnd(maximum: int) -> int:
+    return int(rnd() * maximum)

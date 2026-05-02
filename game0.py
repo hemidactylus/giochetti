@@ -5,16 +5,21 @@ import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
-from egame.randomize import mrnd
+from egame.randomize import i_mrnd
 from egame.things import PhysicsThing, Thing
-from egame.type_definitions import FPair
+from egame.type_definitions import FPair, IPair
 
 CAR_LSIZE = (2, 1.4)
-CAR_STEP = 0.5
+LSIZE = (12, 12)
+CAR_STEP = 1
 FOOD_LSIDE = 0.5
 
+CHART_LDELTA = (1.5, 1.5)
+CHART_LSIZE = (10, 10)
 
 class Car(Thing):
+    chart_lpos: IPair
+
     def __init__(self, scaler: Scaler) -> None:
         self.ini = time.time()
         car_img = pyglet.image.load("car.png")
@@ -23,7 +28,10 @@ class Car(Thing):
         car_sprite.scale_y = scaler.r_y(CAR_LSIZE[1]) / car_img.height
         Thing.__init__(
             self,
-            lpos=(5, 5),
+            lpos=(
+                i_mrnd(CHART_LSIZE[0]),
+                i_mrnd(CHART_LSIZE[1]),
+            ),
             lsize=CAR_LSIZE,
             sprites={"0": car_sprite},
             sprite_offsets={"0": (0, 0)},
@@ -31,6 +39,17 @@ class Car(Thing):
             name="car",
             scaler=scaler,
         )
+        self.update_chart_lpos((0, 0))
+
+    def update_chart_lpos(self, clpos: IPair) -> None:
+        self.chart_lpos = clpos
+        # remap pos
+        lpos = (
+            CHART_LDELTA[0] + clpos[0] - 0.5 * self.lsize[0],
+            CHART_LDELTA[1] + clpos[1] - 0.5 * self.lsize[1],
+        )
+        self.lpos = lpos
+        self.update_lpos(self.lpos)
 
 
 class Poo(PhysicsThing):
@@ -54,9 +73,10 @@ class Poo(PhysicsThing):
 
 
 class Food(Thing):
+    chart_lpos: IPair
     terminating: bool
 
-    def __init__(self, lpos: FPair, scaler: Scaler) -> None:
+    def __init__(self, chart_lpos: IPair, scaler: Scaler) -> None:
         square = pyglet.shapes.Rectangle(
             0,
             0,
@@ -67,13 +87,24 @@ class Food(Thing):
         self.terminating = False
         Thing.__init__(
             self,
-            lpos=lpos,
+            lpos=(0, 0),
             lsize=(FOOD_LSIDE, FOOD_LSIDE),
             sprites={"0": square},
             sprite_offsets={"0": (0, 0)},
             t0_s=0.0,
             scaler=scaler,
         )
+        self.update_chart_lpos(chart_lpos)
+
+    def update_chart_lpos(self, clpos: IPair) -> None:
+        self.chart_lpos = clpos
+        # remap pos
+        lpos = (
+            CHART_LDELTA[0] + clpos[0] - 0.5 * self.lsize[0],
+            CHART_LDELTA[1] + clpos[1] - 0.5 * self.lsize[1],
+        )
+        self.lpos = lpos
+        self.update_lpos(self.lpos)
 
     def terminate(self) -> None:
         self.terminating = True
@@ -86,13 +117,13 @@ class Food(Thing):
 
 
 if __name__ == "__main__":
-    ctx0 = Context(size=(1200, 1200), lsize=(10.0, 10.0), lg=(0.0, -10.0))
+    ctx0 = Context(size=(1200, 1200), lsize=LSIZE, lg=(0.0, -10.0))
 
     car = Car(ctx0.scaler)
     food = Food(
         (
-            mrnd(10.0),
-            mrnd(10.0),
+            i_mrnd(CHART_LSIZE[0]),
+            i_mrnd(CHART_LSIZE[1]),
         ),
         ctx0.scaler,
     )
@@ -100,32 +131,32 @@ if __name__ == "__main__":
     ctx0.push_thing(food)
 
     def on_k_p(ctx: Context, symbol: int, modifiers: int) -> Literal[True] | None:
-        car_n_lpos = car.lpos
+        car_n_clpos = car.chart_lpos
         if symbol == pyglet.window.key.UP:
-            car_n_lpos = (car_n_lpos[0], car_n_lpos[1] + 0.5)
+            car_n_clpos = (car_n_clpos[0], car_n_clpos[1] + CAR_STEP)
         elif symbol == pyglet.window.key.DOWN:
-            car_n_lpos = (car_n_lpos[0], car_n_lpos[1] - 0.5)
+            car_n_clpos = (car_n_clpos[0], car_n_clpos[1] - CAR_STEP)
         elif symbol == pyglet.window.key.LEFT:
-            car_n_lpos = (car_n_lpos[0] - 0.5, car_n_lpos[1])
+            car_n_clpos = (car_n_clpos[0] - CAR_STEP, car_n_clpos[1])
         elif symbol == pyglet.window.key.RIGHT:
-            car_n_lpos = (car_n_lpos[0] + 0.5, car_n_lpos[1])
+            car_n_clpos = (car_n_clpos[0] + CAR_STEP, car_n_clpos[1])
         elif symbol == pyglet.window.key.A:
             ctx.push_thing(Poo(car.lpos, ctx.scaler))
 
-        if car_n_lpos != car.lpos:
-            car.update_lpos(car_n_lpos)
+        if car_n_clpos != car.chart_lpos:
+            car.update_chart_lpos(car_n_clpos)
             # eats?
             foo_delta = (
                 abs(food.lpos[0] - car.lcenter[0]),
                 abs(food.lpos[1] - car.lcenter[1]),
             )
-            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.4:
+            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.5 * CAR_STEP:
                 ctx.push_thing(Poo(car.lcenter, ctx.scaler))
-                food_n_lpos = (
-                    mrnd(10.0),
-                    mrnd(10.0),
+                food_n_clpos = (
+                    i_mrnd(CHART_LSIZE[0]),
+                    i_mrnd(CHART_LSIZE[1]),
                 )
-                food.update_lpos(food_n_lpos)
+                food.update_chart_lpos(food_n_clpos)
 
         return None
 
