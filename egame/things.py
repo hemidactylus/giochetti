@@ -58,7 +58,7 @@ class Thing:
         yield from self.sprites.values()
 
     def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
-        self.t_s += t_s - self.t0_s
+        self.t_s = t_s - self.t0_s
         return False
 
     def die(self) -> None:
@@ -104,7 +104,6 @@ class PhysicsThing(Thing):
                 self.lv[0] + ctx.lg[0] * dt,
                 self.lv[1] + ctx.lg[1] * dt,
             )
-            # TODO g from context
         new_lpos = (
             self.lpos[0] + self.lv[0] * dt,
             self.lpos[1] + self.lv[1] * dt,

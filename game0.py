@@ -8,10 +8,11 @@ from egame.context import Context
 from egame.geometry import Scaler
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import FPair
-
+import time
 
 class Boo(Thing):
     def __init__(self, scaler: Scaler) -> None:
+        self.ini = time.time()
         car_img = pyglet.image.load("car.png")
         car_sprite = pyglet.sprite.Sprite(car_img, x=0, y=0)
         car_sprite.scale_x = scaler.r_x(2) / car_img.width
@@ -38,7 +39,7 @@ class Baa(PhysicsThing):
             sprites={"0": ball},
             sprite_offsets={"0": (0, 0)},
             t0_s=0.0,
-            lv=(0.6, 1.5),
+            lv=(2.6, 6),
             feels_g=True,
             scaler=scaler,
         )
@@ -75,7 +76,7 @@ class Food(Thing):
 
 
 if __name__ == "__main__":
-    ctx0 = Context(size=(1200, 1200), lsize=(10.0, 10.0), lg=(0.0, -1.0), time_factor=4.0)
+    ctx0 = Context(size=(1200, 1200), lsize=(10.0, 10.0), lg=(0.0, -10.0))
 
     boo = Boo(ctx0.scaler)
     foo = Food(
@@ -100,6 +101,7 @@ if __name__ == "__main__":
             ball_n_pos = (ball_n_pos[0] + 0.5, ball_n_pos[1])
         elif symbol == pyglet.window.key.A:
             ctx.push_thing(Baa(boo.lpos, ctx.scaler))
+            ela = time.time() - boo.ini
 
         if ball_n_pos != boo.lpos:
             # has eaten food?

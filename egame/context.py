@@ -108,4 +108,5 @@ class Context:
     def run(self) -> None:
         if not self.started:
             self.window()
+        self.t_s = 0.0
         pyglet.app.run()
