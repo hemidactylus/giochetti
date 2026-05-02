@@ -7,7 +7,10 @@ from egame.context import Context
 from egame.geometry import Scaler
 from egame.randomize import i_mrnd
 from egame.things import PhysicsThing, Thing
-from egame.type_definitions import FPair, IPair
+from egame.type_definitions import Drawable, FPair, IPair
+
+SHOW_FOOD = True
+EMIT_POO = False
 
 CAR_LSIZE = (2, 1.4)
 LSIZE = (12, 12)
@@ -20,27 +23,66 @@ CHART_GUIDELINE_THICKNESS = 0.05
 
 class Car(Thing):
     chart_lpos: IPair
+    label_visible: bool
 
-    def __init__(self, scaler: Scaler) -> None:
+    def __init__(self, label: str | None, chart_lpos: IPair, scaler: Scaler) -> None:
         self.ini = time.time()
+        self.label_visible = False
         car_img = pyglet.image.load("car.png")
         car_sprite = pyglet.sprite.Sprite(car_img, x=0, y=0)
         car_sprite.scale_x = scaler.r_x(CAR_LSIZE[0]) / car_img.width
         car_sprite.scale_y = scaler.r_y(CAR_LSIZE[1]) / car_img.height
+        sprites: dict[str, Drawable] = {"0": car_sprite}
+        sprite_offsets: dict[str, FPair] = {"0": (0, 0)}
+        if label is not None:
+            the_label = pyglet.text.Label(
+                label,
+                font_name="Times New Roman",
+                font_size=scaler.r_x(0.5),
+                x=0,
+                y=0,
+                anchor_x="center",
+                anchor_y="center",
+                color=(138, 20, 128, 255),
+            )
+            the_label.visible = self.label_visible
+            sprites["label"] = the_label
+            sprite_offsets["label"] = (0.5 * CAR_LSIZE[0], 0.7 * CAR_LSIZE[1])
         Thing.__init__(
             self,
-            lpos=(
-                i_mrnd(CHART_LSIZE[0]),
-                i_mrnd(CHART_LSIZE[1]),
-            ),
+            lpos=chart_lpos,
             lsize=CAR_LSIZE,
-            sprites={"0": car_sprite},
-            sprite_offsets={"0": (0, 0)},
+            sprites=sprites,
+            sprite_offsets=sprite_offsets,
             t0_s=0.0,
             name="car",
             scaler=scaler,
         )
-        self.update_chart_lpos((0, 0))
+        self.update_chart_lpos(chart_lpos)
+
+    def show_label(self) -> None:
+        self.label_visible = True
+        self.sprites["label"].visible = self.label_visible
+
+    def hide_label(self) -> None:
+        self.label_visible = False
+        self.sprites["label"].visible = self.label_visible
+
+    def update_label(self, label: str) -> None:
+        if "label" not in self.sprites:
+            raise ValueError
+        the_label = pyglet.text.Label(
+            label,
+            font_name="Times New Roman",
+            font_size=self.scaler.r_x(0.5),
+            x=0,
+            y=0,
+            anchor_x="center",
+            anchor_y="center",
+            color=(138, 20, 128, 255),
+        )
+        the_label.visible = self.label_visible
+        self.sprites["label"] = the_label
 
     def update_chart_lpos(self, clpos: IPair) -> None:
         self.chart_lpos = clpos
@@ -179,6 +221,7 @@ class Label(Thing):
             y=scaler.r_y(lpos[1]),
             anchor_x="center",
             anchor_y="center",
+            color=(255, 255, 255, 128),
         )
         Thing.__init__(
             self,
@@ -194,11 +237,15 @@ class Label(Thing):
 if __name__ == "__main__":
     ctx0 = Context(size=(1200, 1200), lsize=LSIZE, lg=(0.0, -10.0))
 
-    car = Car(ctx0.scaler)
+    car_chart_lpos = (
+        i_mrnd(CHART_LSIZE[0]),
+        i_mrnd(CHART_LSIZE[1]),
+    )
+    car = Car(f"({car_chart_lpos[0]},{car_chart_lpos[1]})", car_chart_lpos, ctx0.scaler)
     food = Food(
         (
-            i_mrnd(CHART_LSIZE[0]),
-            i_mrnd(CHART_LSIZE[1]),
+            i_mrnd(CHART_LSIZE[0]) if SHOW_FOOD else CHART_LSIZE[0] + 10,
+            i_mrnd(CHART_LSIZE[1]) if SHOW_FOOD else CHART_LSIZE[1] + 10,
         ),
         ctx0.scaler,
     )
@@ -248,26 +295,30 @@ if __name__ == "__main__":
                 car_n_clpos[1],
             )
         elif symbol == pyglet.window.key.A:
-            ctx.push_thing(Poo(car.lpos, ctx.scaler))
+            ctx.push_thing(Poo(car.lcenter, ctx.scaler))
         elif symbol == pyglet.window.key.C:
             if show_guidelines[0]:
                 show_guidelines[0] = False
+                car.hide_label()
                 for gl in guideline_things:
                     gl.hide()
             else:
                 show_guidelines[0] = True
+                car.show_label()
                 for gl in guideline_things:
                     gl.show()
 
         if car_n_clpos != car.chart_lpos:
+            car.update_label(f"({car_n_clpos[0]},{car_n_clpos[1]})")
             car.update_chart_lpos(car_n_clpos)
             # eats?
             foo_delta = (
                 abs(food.lpos[0] - car.lcenter[0]),
                 abs(food.lpos[1] - car.lcenter[1]),
             )
-            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.5:
-                ctx.push_thing(Poo(car.lcenter, ctx.scaler))
+            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.4:
+                if EMIT_POO:
+                    ctx.push_thing(Poo(car.lcenter, ctx.scaler))
                 food_n_clpos = (
                     i_mrnd(CHART_LSIZE[0]),
                     i_mrnd(CHART_LSIZE[1]),
