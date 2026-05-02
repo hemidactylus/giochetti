@@ -14,8 +14,11 @@ LSIZE = (12, 12)
 CAR_STEP = 1
 FOOD_LSIDE = 0.5
 
+SHOW_CHART = True
 CHART_LDELTA = (1.5, 1.5)
 CHART_LSIZE = (10, 10)
+CHART_GUIDELINE_THICKNESS = 0.05
+
 
 class Car(Thing):
     chart_lpos: IPair
@@ -116,6 +119,80 @@ class Food(Thing):
         return dying
 
 
+class Guideline(Thing):
+    def __init__(self, tick_i: int, kind: str, scaler: Scaler) -> None:
+        the_line: pyglet.shapes.Rectangle
+        lpos: FPair
+        lsize: FPair
+        if kind == "h":
+            y = -0.5 + CHART_LDELTA[1] + tick_i
+            xs = (
+                -0.5 + CHART_LDELTA[0],
+                -0.5 + CHART_LDELTA[0] + CHART_LSIZE[0],
+            )
+            the_line = pyglet.shapes.Rectangle(
+                scaler.r_x(xs[0]),
+                scaler.r_y(y - CHART_GUIDELINE_THICKNESS),
+                scaler.r_x(xs[1] - xs[0]),
+                scaler.r_y(CHART_GUIDELINE_THICKNESS),
+                color=(255, 255, 255, 128),
+            )
+            lpos = (xs[0], y)
+            lsize = (xs[1] - xs[0], CHART_GUIDELINE_THICKNESS)
+        elif kind == "v":
+            x = -0.5 + CHART_LDELTA[0] + tick_i
+            ys = (
+                -0.5 + CHART_LDELTA[1],
+                -0.5 + CHART_LDELTA[1] + CHART_LSIZE[1],
+            )
+            the_line = pyglet.shapes.Rectangle(
+                scaler.r_x(x - CHART_GUIDELINE_THICKNESS),
+                scaler.r_y(ys[0]),
+                scaler.r_x(CHART_GUIDELINE_THICKNESS),
+                scaler.r_y(ys[1] - ys[0]),
+                color=(255, 255, 255, 128),
+            )
+            lpos = (x, ys[0])
+            lsize = (CHART_GUIDELINE_THICKNESS, ys[1] - ys[0])
+        else:
+            raise ValueError
+        Thing.__init__(
+            self,
+            lpos=lpos,
+            lsize=lsize,
+            sprites={"0": the_line},
+            sprite_offsets={"0": (0, 0)},
+            t0_s=0.0,
+            scaler=scaler,
+        )
+
+
+class Label(Thing):
+    def __init__(self, chart_lpos: IPair, text: str, scaler: Scaler) -> None:
+        lpos = (
+            CHART_LDELTA[0] + chart_lpos[0],
+            CHART_LDELTA[1] + chart_lpos[1],
+        )
+        the_text = pyglet.text.Label(
+            text,
+            font_name="Times New Roman",
+            font_size=scaler.r_x(0.7),
+            x=scaler.r_x(lpos[0]),
+            y=scaler.r_y(lpos[1]),
+            anchor_x="center",
+            anchor_y="center",
+        )
+        Thing.__init__(
+            self,
+            lpos=lpos,
+            lsize=(0, 0),
+            sprites={"0": the_text},
+            sprite_offsets={"0": (0, 0)},
+            t0_s=0.0,
+            scaler=scaler,
+        )
+
+
 if __name__ == "__main__":
     ctx0 = Context(size=(1200, 1200), lsize=LSIZE, lg=(0.0, -10.0))
 
@@ -127,6 +204,19 @@ if __name__ == "__main__":
         ),
         ctx0.scaler,
     )
+
+    if SHOW_CHART:
+        for tick_i in range(CHART_LSIZE[0] + 1):
+            ctx0.push_thing(Guideline(tick_i=tick_i, kind="h", scaler=ctx0.scaler))
+            ctx0.push_thing(Guideline(tick_i=tick_i, kind="v", scaler=ctx0.scaler))
+        for tick_i in range(CHART_LSIZE[0]):
+            ctx0.push_thing(
+                Label(chart_lpos=(tick_i, -1), text=f"{tick_i}", scaler=ctx0.scaler)
+            )
+            ctx0.push_thing(
+                Label(chart_lpos=(-1, tick_i), text=f"{tick_i}", scaler=ctx0.scaler)
+            )
+
     ctx0.push_thing(car)
     ctx0.push_thing(food)
 
