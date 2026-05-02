@@ -72,6 +72,14 @@ class Thing:
         for sprite in self.sprites.values():
             sprite.delete()
 
+    def hide(self) -> None:
+        for sprite in self.sprites.values():
+            sprite.visible = False
+
+    def show(self) -> None:
+        for sprite in self.sprites.values():
+            sprite.visible = True
+
 
 class PhysicsThing(Thing):
     lv: FPair

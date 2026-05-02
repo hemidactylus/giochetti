@@ -11,10 +11,8 @@ from egame.type_definitions import FPair, IPair
 
 CAR_LSIZE = (2, 1.4)
 LSIZE = (12, 12)
-CAR_STEP = 1
 FOOD_LSIDE = 0.5
 
-SHOW_CHART = True
 CHART_LDELTA = (1.5, 1.5)
 CHART_LSIZE = (10, 10)
 CHART_GUIDELINE_THICKNESS = 0.05
@@ -205,33 +203,61 @@ if __name__ == "__main__":
         ctx0.scaler,
     )
 
-    if SHOW_CHART:
-        for tick_i in range(CHART_LSIZE[0] + 1):
-            ctx0.push_thing(Guideline(tick_i=tick_i, kind="h", scaler=ctx0.scaler))
-            ctx0.push_thing(Guideline(tick_i=tick_i, kind="v", scaler=ctx0.scaler))
-        for tick_i in range(CHART_LSIZE[0]):
-            ctx0.push_thing(
-                Label(chart_lpos=(tick_i, -1), text=f"{tick_i}", scaler=ctx0.scaler)
-            )
-            ctx0.push_thing(
-                Label(chart_lpos=(-1, tick_i), text=f"{tick_i}", scaler=ctx0.scaler)
-            )
+    guideline_things: list[Thing] = []
+    for tick_i in range(CHART_LSIZE[0] + 1):
+        guideline_things.append(Guideline(tick_i=tick_i, kind="h", scaler=ctx0.scaler))
+        guideline_things.append(Guideline(tick_i=tick_i, kind="v", scaler=ctx0.scaler))
+    for tick_i in range(CHART_LSIZE[0]):
+        guideline_things.append(
+            Label(chart_lpos=(tick_i, -1), text=f"{tick_i}", scaler=ctx0.scaler)
+        )
+        guideline_things.append(
+            Label(chart_lpos=(-1, tick_i), text=f"{tick_i}", scaler=ctx0.scaler)
+        )
+    for gl in guideline_things:
+        gl.hide()
+        ctx0.push_thing(gl)
 
     ctx0.push_thing(car)
     ctx0.push_thing(food)
 
-    def on_k_p(ctx: Context, symbol: int, modifiers: int) -> Literal[True] | None:
+    show_guidelines = [False]
+
+    def on_k_p(
+        ctx: Context, symbol: int, modifiers: int, show_guidelines=show_guidelines
+    ) -> Literal[True] | None:
         car_n_clpos = car.chart_lpos
         if symbol == pyglet.window.key.UP:
-            car_n_clpos = (car_n_clpos[0], car_n_clpos[1] + CAR_STEP)
+            car_n_clpos = (
+                car_n_clpos[0],
+                car_n_clpos[1] + 1,
+            )
         elif symbol == pyglet.window.key.DOWN:
-            car_n_clpos = (car_n_clpos[0], car_n_clpos[1] - CAR_STEP)
+            car_n_clpos = (
+                car_n_clpos[0],
+                car_n_clpos[1] - 1,
+            )
         elif symbol == pyglet.window.key.LEFT:
-            car_n_clpos = (car_n_clpos[0] - CAR_STEP, car_n_clpos[1])
+            car_n_clpos = (
+                car_n_clpos[0] - 1,
+                car_n_clpos[1],
+            )
         elif symbol == pyglet.window.key.RIGHT:
-            car_n_clpos = (car_n_clpos[0] + CAR_STEP, car_n_clpos[1])
+            car_n_clpos = (
+                car_n_clpos[0] + 1,
+                car_n_clpos[1],
+            )
         elif symbol == pyglet.window.key.A:
             ctx.push_thing(Poo(car.lpos, ctx.scaler))
+        elif symbol == pyglet.window.key.C:
+            if show_guidelines[0]:
+                show_guidelines[0] = False
+                for gl in guideline_things:
+                    gl.hide()
+            else:
+                show_guidelines[0] = True
+                for gl in guideline_things:
+                    gl.show()
 
         if car_n_clpos != car.chart_lpos:
             car.update_chart_lpos(car_n_clpos)
@@ -240,7 +266,7 @@ if __name__ == "__main__":
                 abs(food.lpos[0] - car.lcenter[0]),
                 abs(food.lpos[1] - car.lcenter[1]),
             )
-            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.5 * CAR_STEP:
+            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.5:
                 ctx.push_thing(Poo(car.lcenter, ctx.scaler))
                 food_n_clpos = (
                     i_mrnd(CHART_LSIZE[0]),
