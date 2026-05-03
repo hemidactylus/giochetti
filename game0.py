@@ -9,7 +9,7 @@ from egame.randomize import i_mrnd
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import Drawable, FPair, IPair
 
-SHOW_FOOD = True
+SHOW_FOOD = False
 EMIT_POO = False
 
 CAR_LSIZE = (2, 1.4)
@@ -19,6 +19,16 @@ FOOD_LSIDE = 0.5
 CHART_LDELTA = (1.5, 1.5)
 CHART_LSIZE = (10, 10)
 CHART_GUIDELINE_THICKNESS = 0.05
+CAR_LABEL_COLOR = (30, 200, 40, 255)
+
+MOVEMENT_STYLE = "discrete"
+# MOVEMENT_STYLE = "continuum"
+# MOVEMENT_STYLE = "physical"
+
+CONTINUUM_CAR_LV = 2.5
+CONTINUUM_CAR_LA = 8.0
+PHYSICAL_FRICTION_K = 1.5
+PHYSICAL_MIN_V = 0.1
 
 
 class Car(Thing):
@@ -43,7 +53,7 @@ class Car(Thing):
                 y=0,
                 anchor_x="center",
                 anchor_y="center",
-                color=(138, 20, 128, 255),
+                color=CAR_LABEL_COLOR,
             )
             the_label.visible = self.label_visible
             sprites["label"] = the_label
@@ -79,7 +89,7 @@ class Car(Thing):
             y=0,
             anchor_x="center",
             anchor_y="center",
-            color=(138, 20, 128, 255),
+            color=CAR_LABEL_COLOR,
         )
         the_label.visible = self.label_visible
         self.sprites["label"] = the_label
@@ -270,7 +280,26 @@ if __name__ == "__main__":
 
     show_guidelines = [False]
 
-    def on_k_p(
+    keys_map: dict[int, bool] = {}
+
+    def detect_interactions() -> None:
+        # eats?
+        foo_delta = (
+            abs(food.lpos[0] - car.lcenter[0]),
+            abs(food.lpos[1] - car.lcenter[1]),
+        )
+        if foo_delta[0] <= 0.5 and foo_delta[1] <= 0.5:
+            if EMIT_POO:
+                ctx0.push_thing(Poo(car.lcenter, ctx0.scaler))
+            food_n_clpos = (
+                i_mrnd(CHART_LSIZE[0]),
+                i_mrnd(CHART_LSIZE[1]),
+            )
+            food.update_chart_lpos(food_n_clpos)
+
+    # discrete movement:
+
+    def on_k_p_discrete(
         ctx: Context, symbol: int, modifiers: int, show_guidelines=show_guidelines
     ) -> Literal[True] | None:
         car_n_clpos = car.chart_lpos
@@ -311,22 +340,95 @@ if __name__ == "__main__":
         if car_n_clpos != car.chart_lpos:
             car.update_label(f"({car_n_clpos[0]},{car_n_clpos[1]})")
             car.update_chart_lpos(car_n_clpos)
-            # eats?
-            foo_delta = (
-                abs(food.lpos[0] - car.lcenter[0]),
-                abs(food.lpos[1] - car.lcenter[1]),
-            )
-            if foo_delta[0] <= 0.4 and foo_delta[1] <= 0.4:
-                if EMIT_POO:
-                    ctx.push_thing(Poo(car.lcenter, ctx.scaler))
-                food_n_clpos = (
-                    i_mrnd(CHART_LSIZE[0]),
-                    i_mrnd(CHART_LSIZE[1]),
-                )
-                food.update_chart_lpos(food_n_clpos)
+            detect_interactions()
 
         return None
 
-    ctx0.on_key_press(on_k_p)
+    # continuum movement:
+    def on_k_p_continuum(
+        ctx: Context, symbol: int, modifiers: int, show_guidelines=show_guidelines
+    ) -> Literal[True] | None:
+        if symbol == pyglet.window.key.A:
+            ctx.push_thing(Poo(car.lcenter, ctx.scaler))
+        elif symbol == pyglet.window.key.C:
+            if show_guidelines[0]:
+                show_guidelines[0] = False
+                car.hide_label()
+                for gl in guideline_things:
+                    gl.hide()
+            else:
+                show_guidelines[0] = True
+                for gl in guideline_things:
+                    gl.show()
+
+        keys_map[symbol] = True
+        return None
+
+    def on_k_r_continuum(
+        ctx: Context, symbol: int, modifiers: int, show_guidelines=show_guidelines
+    ) -> Literal[True] | None:
+        keys_map[symbol] = False
+        return None
+
+    def tk_continuum(ctx: Context, dt: float, t: float) -> None:
+        lv: list[float] = [0, 0]
+        if keys_map.get(pyglet.window.key.UP):
+            lv[1] += CONTINUUM_CAR_LV
+        if keys_map.get(pyglet.window.key.DOWN):
+            lv[1] -= CONTINUUM_CAR_LV
+        if keys_map.get(pyglet.window.key.LEFT):
+            lv[0] -= CONTINUUM_CAR_LV
+        if keys_map.get(pyglet.window.key.RIGHT):
+            lv[0] += CONTINUUM_CAR_LV
+        if lv != (0, 0):
+            ld = (lv[0] * dt, lv[1] * dt)
+            new_car_lpos = (
+                car.lpos[0] + ld[0],
+                car.lpos[1] + ld[1],
+            )
+            car.update_lpos((new_car_lpos[0], new_car_lpos[1]))
+            detect_interactions()
+
+    car_lv: list[tuple[float, float]] = [(0, 0)]
+
+    def tk_physical(ctx: Context, dt: float, t: float) -> None:
+        la: list[float] = [0, 0]
+        if keys_map.get(pyglet.window.key.UP):
+            la[1] += CONTINUUM_CAR_LA
+        if keys_map.get(pyglet.window.key.DOWN):
+            la[1] -= CONTINUUM_CAR_LA
+        if keys_map.get(pyglet.window.key.LEFT):
+            la[0] -= CONTINUUM_CAR_LA
+        if keys_map.get(pyglet.window.key.RIGHT):
+            la[0] += CONTINUUM_CAR_LA
+        if la[0] == 0 and car_lv[0][0] != 0:
+            la[0] = -PHYSICAL_FRICTION_K * car_lv[0][0]
+        if la[1] == 0 and car_lv[0][1] != 0:
+            la[1] = -PHYSICAL_FRICTION_K * car_lv[0][1]
+        delta_lv = (la[0] * dt, la[1] * dt)
+        if delta_lv != (0, 0):
+            new_car_lv = (car_lv[0][0] + delta_lv[0], car_lv[0][1] + delta_lv[1])
+            car_lv[0] = (
+                new_car_lv[0] if abs(new_car_lv[0]) > PHYSICAL_MIN_V else 0.0,
+                new_car_lv[1] if abs(new_car_lv[1]) > PHYSICAL_MIN_V else 0.0,
+            )
+        if car_lv[0] != (0, 0):
+            delta_l = (new_car_lv[0] * dt, new_car_lv[1] * dt)
+            new_car_lpos = (car.lpos[0] + delta_l[0], car.lpos[1] + delta_l[1])
+            car.update_lpos(new_car_lpos)
+            detect_interactions()
+
+    if MOVEMENT_STYLE == "discrete":
+        ctx0.on_key_press(on_k_p_discrete)
+    elif MOVEMENT_STYLE == "continuum":
+        ctx0.on_key_press(on_k_p_continuum)
+        ctx0.on_key_release(on_k_r_continuum)
+        ctx0.tick(tk_continuum)
+    elif MOVEMENT_STYLE == "physical":
+        ctx0.on_key_press(on_k_p_continuum)
+        ctx0.on_key_release(on_k_r_continuum)
+        ctx0.tick(tk_physical)
+    else:
+        raise ValueError
 
     ctx0.run()

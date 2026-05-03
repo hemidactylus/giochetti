@@ -21,6 +21,8 @@ class Context:
     t_s: float
     things: list[Thing]
     _okp: Callable[["Context", int, int], Literal[True] | None] | None
+    _okr: Callable[["Context", int, int], Literal[True] | None] | None
+    _tick: Callable[["Context", float, float], None] | None
     _window: pyglet.window.Window
 
     def __init__(
@@ -39,6 +41,8 @@ class Context:
         self.title = title
         self.started = False
         self._okp = None
+        self._okr = None
+        self._tick = None
         self.t_s = 0.0
         self.things = []
         self.scaler = Scaler(size=size, lsize=lsize)
@@ -50,6 +54,18 @@ class Context:
         if self.started:
             raise ValueError("Already started")
         self._okp = okp
+
+    def on_key_release(
+        self, okr: Callable[["Context", int, int], Literal[True] | None]
+    ) -> None:
+        if self.started:
+            raise ValueError("Already started")
+        self._okr = okr
+
+    def tick(self, tk: Callable[["Context", float, float], None]) -> None:
+        if self.started:
+            raise ValueError("Already started")
+        self._tick = tk
 
     def push_thing(self, thing: Thing) -> None:
         thing.t0_s = self.t_s  # TODO make a setter method
@@ -67,14 +83,25 @@ class Context:
     def window(self) -> pyglet.window.Window:
         if self.started:
             raise ValueError("Already started")
+
+        keys = pyglet.window.key.KeyStateHandler()
+        self._window.push_handlers(keys)
+
         if self._okp:
-            keys = pyglet.window.key.KeyStateHandler()
-            self._window.push_handlers(keys)
 
             @self._window.event
             def on_key_press(symbol: int, modifiers: int) -> Literal[True] | None:
                 if self._okp is not None:
                     return self._okp(self, symbol, modifiers)
+                else:
+                    return None
+
+        if self._okr:
+
+            @self._window.event
+            def on_key_release(symbol: int, modifiers: int) -> Literal[True] | None:
+                if self._okr is not None:
+                    return self._okr(self, symbol, modifiers)
                 else:
                     return None
 
@@ -100,6 +127,8 @@ class Context:
                     for thing_i, thing in enumerate(self.things)
                     if thing_i not in dying_indices
                 ]
+            if self._tick:
+                self._tick(self, dt, self.t_s)
 
         pyglet.clock.schedule_interval(update, 1 / 60.0)
         self.started = True
