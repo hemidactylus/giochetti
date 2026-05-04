@@ -32,15 +32,15 @@ class Thing:
     ) -> None:
         self.lsize = lsize
         self.sprites = sprites
-        self.sprite_offsets = sprite_offsets
         self.t_s = 0.0
         self.t0_s = t0_s
         self.scaler = scaler
+        self.name = name  # TODO autogen
+        self.sprite_offsets = sprite_offsets
         self._sprite_offsets_scaled = {
             sk: (self.scaler.r_x(soffset[0]), self.scaler.r_y(soffset[1]))
             for sk, soffset in self.sprite_offsets.items()
         }
-        self.name = name  # TODO autogen
         self.update_lpos(lpos)
 
     @property
@@ -48,6 +48,13 @@ class Thing:
         return (
             self.lpos[0] + 0.5 * self.lsize[0],
             self.lpos[1] + 0.5 * self.lsize[1],
+        )
+
+    def update_sprite_offset(self, sprite_key: str, sprite_offset: FPair) -> None:
+        self.sprite_offsets[sprite_key] = sprite_offset
+        self._sprite_offsets_scaled[sprite_key] = (
+            self.scaler.r_x(sprite_offset[0]),
+            self.scaler.r_y(sprite_offset[1]),
         )
 
     def update_lpos(self, lpos: FPair) -> None:
