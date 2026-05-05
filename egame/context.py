@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import pyglet
 
@@ -24,6 +24,7 @@ class Context:
     _okr: Callable[["Context", int, int], Literal[True] | None] | None
     _tick: Callable[["Context", float, float], None] | None
     _window: pyglet.window.Window
+    state: dict[str, Any]
 
     def __init__(
         self,
@@ -45,6 +46,7 @@ class Context:
         self._tick = None
         self.t_s = 0.0
         self.things = []
+        self.state = {}
         self.scaler = Scaler(size=size, lsize=lsize)
         self._make_window()
 
@@ -79,6 +81,13 @@ class Context:
             caption=self.title,
             fullscreen=False,
         )
+
+    def thing_by_name(self, name: str) -> Thing | None:
+        matches = [thg for thg in self.things if thg.name == name]
+        if len(matches) == 1:
+            return matches[0]
+        else:
+            return None
 
     def window(self) -> pyglet.window.Window:
         if self.started:

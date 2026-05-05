@@ -4,7 +4,7 @@ import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
-from egame.randomize import i_mrnd, rnd
+from egame.randomize import fluctuate, i_mrnd, rnd
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import Drawable, FPair
 
@@ -19,12 +19,15 @@ DELTA_FLATE = 0.1
 BOX_LSIDE = 0.45
 
 GROUND_LY = 1.2
+BALLOON_START_X = 0.25 * LSIZE[0]
+BALLOON_END_X = 0.75 * LSIZE[0]
+BALLOON_END_X_RANGE = 0.1 * LSIZE[0]
 
 BUOYANCY_K = 5.0
 C_X = 0.4
 WIND_FORCE = 42.0
 
-CLOUDS_PER_SECOND = 0.25
+CLOUDS_PER_SECOND = 0.55
 CLOUD_RADIUS = 0.3
 
 LEFT_WIND_LY = 4.0
@@ -57,6 +60,7 @@ class Balloon(PhysicsThing):
             self,
             lpos=lpos,
             lsize=(MAX_LRAD, MAX_LRAD),
+            name="balloon",
             sprites={
                 "0": ball,
                 "box": box,
@@ -95,33 +99,69 @@ class Balloon(PhysicsThing):
         self.update_sprite_offset("0", (0, self.lrad + BOX_LSIDE))
 
     def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
-        ax: float = 0
-        ay: float = 0
+        if ctx.state["mode"] == "playing":
+            ax: float = 0
+            ay: float = 0
 
-        buoyancy = self.lrad - ZERO_LRAD
-        if buoyancy < 0:
-            if self.lpos[1] > GROUND_LY:
+            buoyancy = self.lrad - ZERO_LRAD
+            if buoyancy < 0:
+                if self.lpos[1] > GROUND_LY:
+                    ay = buoyancy * BUOYANCY_K - self.lv[1] * C_X
+                else:
+                    if abs(self.lpos[0] - BALLOON_END_X) <= BALLOON_END_X_RANGE:
+                        ctx.state["inbox"].append("won")
+            elif buoyancy > 0:
                 ay = buoyancy * BUOYANCY_K - self.lv[1] * C_X
-        elif buoyancy > 0:
-            ay = buoyancy * BUOYANCY_K - self.lv[1] * C_X
 
-        b_y = self.lpos[1] + self.lrad + BOX_LSIDE
-        if abs(b_y - RIGHT_WIND_LY) < WIND_STRIP_HWIDTH:
-            ax = WIND_FORCE * dt - self.lv[0] * C_X
-        elif abs(b_y - LEFT_WIND_LY) < WIND_STRIP_HWIDTH:
-            ax = -WIND_FORCE * dt - self.lv[0] * C_X
+            b_y = self.lpos[1] + self.lrad + BOX_LSIDE
+            if abs(b_y - RIGHT_WIND_LY) < WIND_STRIP_HWIDTH:
+                ax = WIND_FORCE * dt - self.lv[0] * C_X
+            elif abs(b_y - LEFT_WIND_LY) < WIND_STRIP_HWIDTH:
+                ax = -WIND_FORCE * dt - self.lv[0] * C_X
 
-        new_lvx = self.lv[0] + ax * dt
-        new_lvy = self.lv[1] + ay * dt
-        if new_lvy < 0 and self.lpos[1] < GROUND_LY:
-            new_lvy = 0
-            new_lvx = 0
-        self.lv = (new_lvx, new_lvy)
+            new_lvx = self.lv[0] + ax * dt
+            new_lvy = self.lv[1] + ay * dt
+            if new_lvy < 0 and self.lpos[1] < GROUND_LY:
+                new_lvy = 0
+                new_lvx = 0
+            self.lv = (new_lvx, new_lvy)
 
-        dying = PhysicsThing.dies_on_update(self, ctx=ctx, dt=dt, t_s=t_s)
-        if dying:
-            print("HAI PERSO!")
-        return dying
+            dying = PhysicsThing.dies_on_update(self, ctx=ctx, dt=dt, t_s=t_s)
+            if dying:
+                ctx.state["inbox"].append("lost")
+            return dying
+        elif ctx.state["mode"] == "idle":
+            return False
+        else:
+            raise ValueError
+
+
+class Messenger(Thing):
+    label: pyglet.text.Label
+
+    def __init__(self, text: str, scaler: Scaler) -> None:
+        self.label = pyglet.text.Label(
+            text,
+            font_name="Times New Roman",
+            font_size=scaler.r_x(2),
+            x=0.5 * LSIZE[0],
+            y=0.5 * LSIZE[1],
+            anchor_x="center",
+            anchor_y="center",
+            color=(40, 255, 60, 128),
+        )
+        Thing.__init__(
+            self,
+            lpos=(0.5 * LSIZE[0], 0.5 * LSIZE[1]),
+            lsize=LSIZE,
+            sprites={"l": self.label},
+            sprite_offsets={"l": (0, 0)},
+            t0_s=0.0,
+            scaler=scaler,
+        )
+
+    def set_text(self, text: str) -> None:
+        self.label.text = text
 
 
 class Scenery(Thing):
@@ -140,6 +180,13 @@ class Scenery(Thing):
             scaler.r_y(LSIZE[1] - GROUND_LY),
             color=(50, 90, 255, 255),
         )
+        target = pyglet.shapes.Rectangle(
+            scaler.r_x(BALLOON_END_X - BALLOON_END_X_RANGE),
+            scaler.r_y(GROUND_LY - 0.2),
+            scaler.r_x(2 * BALLOON_END_X_RANGE),
+            scaler.r_y(0.2),
+            color=(255, 40, 40, 255),
+        )
         Thing.__init__(
             self,
             lpos=(0, 0),
@@ -147,10 +194,15 @@ class Scenery(Thing):
             sprites={
                 "g": ground,
                 "s": sky,
+                "t": target,
             },
             sprite_offsets={
                 "g": (0, 0),
                 "s": (0, GROUND_LY),
+                "t": (
+                    BALLOON_END_X - BALLOON_END_X_RANGE,
+                    GROUND_LY - 0.2,
+                ),
             },
             t0_s=0.0,
             scaler=scaler,
@@ -189,39 +241,73 @@ class Cloudette(PhysicsThing):
 if __name__ == "__main__":
     ctx0 = Context(size=SIZE, lsize=LSIZE, lg=(0.0, -10.0), time_factor=1.0)
 
+    ctx0.state["mode"] = "idle"
+    ctx0.state["inbox"] = []
+
     balloon = Balloon(
-        lpos=(8, GROUND_LY),
+        lpos=(BALLOON_START_X, GROUND_LY),
         lrad=MIN_LRAD,
         scaler=ctx0.scaler,
     )
 
     ctx0.push_thing(Scenery(scaler=ctx0.scaler))
     ctx0.push_thing(balloon)
+    messenger = Messenger("i = inizia", scaler=ctx0.scaler)
+    ctx0.push_thing(messenger)
 
     def on_k_p(ctx: Context, symbol: int, modifiers: int) -> Literal[True] | None:
-        if symbol == pyglet.window.key.Q:
-            balloon.flate(DELTA_FLATE)
-        elif symbol == pyglet.window.key.Z:
-            balloon.flate(-DELTA_FLATE)
+        b: Balloon | None
+        b = ctx.thing_by_name("balloon")  # type: ignore[assignment]
+        if ctx.state["mode"] == "playing":
+            if b is None:
+                raise ValueError("no balloon")
+            if symbol == pyglet.window.key.Q:
+                b.flate(DELTA_FLATE)
+            elif symbol == pyglet.window.key.Z:
+                b.flate(-DELTA_FLATE)
+        elif ctx.state["mode"] == "idle":
+            if symbol == pyglet.window.key.I:
+                messenger.set_text("")
+                ctx.state["mode"] = "playing"
+                if b is None:
+                    new_b = Balloon(
+                        lpos=(BALLOON_START_X, GROUND_LY),
+                        lrad=MIN_LRAD,
+                        scaler=ctx.scaler,
+                    )
+                    ctx.push_thing(new_b)
+                else:
+                    # just reposition
+                    b.update_lpos((BALLOON_START_X, GROUND_LY))
+        else:
+            raise ValueError
         return None
 
     def tk(ctx: Context, dt: float, t: float) -> None:
+        if ctx.state["inbox"]:
+            action = ctx.state["inbox"][0]
+            messenger.set_text({"won": "Hai vinto!", "lost": "Hai perso."}[action])
+            ctx.state["inbox"] = []
+            ctx.state["mode"] = "idle"
+
         chance = CLOUDS_PER_SECOND * dt
         if rnd() < chance:
             if i_mrnd(2) == 0:
                 # up
+                cloud_y = fluctuate(LEFT_WIND_LY, WIND_STRIP_HWIDTH)
                 ctx.push_thing(
                     Cloudette(
-                        lpos=(LSIZE[0], LEFT_WIND_LY),
+                        lpos=(LSIZE[0], cloud_y),
                         lvx=-0.6,
                         scaler=ctx.scaler,
                     )
                 )
             else:
                 # down
+                cloud_y = fluctuate(RIGHT_WIND_LY, WIND_STRIP_HWIDTH)
                 ctx.push_thing(
                     Cloudette(
-                        lpos=(0, RIGHT_WIND_LY),
+                        lpos=(0, cloud_y),
                         lvx=0.6,
                         scaler=ctx.scaler,
                     )
