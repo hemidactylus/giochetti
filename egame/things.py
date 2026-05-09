@@ -118,25 +118,45 @@ class PhysicsThing(Thing):
         self.lv = lv
         self.feels_g = feels_g
 
-    def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
-        if Thing.dies_on_update(self, ctx=ctx, dt=dt, t_s=t_s):
-            return True
-        if self.feels_g:
-            self.lv = (
+    def compute_motion(
+        self,
+        ctx: "Context",
+        dt: float,
+        t_s: float,
+        feels_g: float,
+    ) -> tuple[FPair, FPair]:
+        new_lv: FPair
+        new_lpos: FPair
+        if feels_g:
+            new_lv = (
                 self.lv[0] + ctx.lg[0] * dt,
                 self.lv[1] + ctx.lg[1] * dt,
             )
+        else:
+            new_lv = self.lv
         new_lpos = (
             self.lpos[0] + self.lv[0] * dt,
             self.lpos[1] + self.lv[1] * dt,
         )
+        return new_lv, new_lpos
+
+    def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
+        if Thing.dies_on_update(self, ctx=ctx, dt=dt, t_s=t_s):
+            return True
+        new_lv, new_lpos = self.compute_motion(
+            ctx, dt=dt, t_s=t_s, feels_g=self.feels_g
+        )
+        self.lv = new_lv
         self.update_lpos(new_lpos)
-        if new_lpos[0] < 0:
+        return self.out_of_boundaries(ctx)
+
+    def out_of_boundaries(self, ctx: "Context") -> bool:
+        if self.lpos[0] + self.lsize[0] < 0:
             return True
-        if new_lpos[1] < 0:
+        if self.lpos[1] + self.lsize[1] < 0:
             return True
-        if new_lpos[0] - self.lsize[0] > ctx.lsize[0]:
+        if self.lpos[0] > ctx.lsize[0]:
             return True
-        if new_lpos[1] - self.lsize[1] > ctx.lsize[1]:
+        if self.lpos[1] > ctx.lsize[1]:
             return True
         return False

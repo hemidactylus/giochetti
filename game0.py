@@ -19,7 +19,8 @@ FOOD_LSIDE = 0.5
 CHART_LDELTA = (1.5, 1.5)
 CHART_LSIZE = (10, 10)
 CHART_GUIDELINE_THICKNESS = 0.05
-CAR_LABEL_COLOR = (30, 200, 40, 255)
+CAR_LABEL_COLOR = (20, 120, 26, 255)
+CAR_LABEL_FORMAT = "(x={x}, y={y})"
 
 MOVEMENT_STYLE = "discrete"
 # MOVEMENT_STYLE = "continuum"
@@ -251,7 +252,11 @@ if __name__ == "__main__":
         i_mrnd(CHART_LSIZE[0]),
         i_mrnd(CHART_LSIZE[1]),
     )
-    car = Car(f"({car_chart_lpos[0]},{car_chart_lpos[1]})", car_chart_lpos, ctx0.scaler)
+    car = Car(
+        CAR_LABEL_FORMAT.format(x=car_chart_lpos[0], y=car_chart_lpos[1]),
+        car_chart_lpos,
+        ctx0.scaler,
+    )
     food = Food(
         (
             i_mrnd(CHART_LSIZE[0]) if SHOW_FOOD else CHART_LSIZE[0] + 10,
@@ -338,7 +343,9 @@ if __name__ == "__main__":
                     gl.show()
 
         if car_n_clpos != car.chart_lpos:
-            car.update_label(f"({car_n_clpos[0]},{car_n_clpos[1]})")
+            car.update_label(
+                CAR_LABEL_FORMAT.format(x=car_n_clpos[0], y=car_n_clpos[1])
+            )
             car.update_chart_lpos(car_n_clpos)
             detect_interactions()
 
