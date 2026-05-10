@@ -1,3 +1,5 @@
+import os
+
 import time
 from typing import Literal
 
@@ -9,8 +11,8 @@ from egame.randomize import i_mrnd
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import Drawable, FPair, IPair
 
-SHOW_FOOD = False
-EMIT_POO = False
+SHOW_FOOD = True
+EMIT_POO = True
 
 CAR_LSIZE = (2, 1.4)
 LSIZE = (12, 12)
@@ -25,11 +27,19 @@ CAR_LABEL_FORMAT = "(x={x}, y={y})"
 MOVEMENT_STYLE = "discrete"
 # MOVEMENT_STYLE = "continuum"
 # MOVEMENT_STYLE = "physical"
+DISCRETE_MOEBIUS = True
 
 CONTINUUM_CAR_LV = 2.5
 CONTINUUM_CAR_LA = 8.0
 PHYSICAL_FRICTION_K = 1.5
 PHYSICAL_MIN_V = 0.1
+
+SPRITE_ROOT = os.path.normpath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "cars_images",
+    )
+)
 
 
 class Car(Thing):
@@ -39,7 +49,7 @@ class Car(Thing):
     def __init__(self, label: str | None, chart_lpos: IPair, scaler: Scaler) -> None:
         self.ini = time.time()
         self.label_visible = False
-        car_img = pyglet.image.load("car.png")
+        car_img = pyglet.image.load(os.path.join(SPRITE_ROOT, "car.png"))
         car_sprite = pyglet.sprite.Sprite(car_img, x=0, y=0)
         car_sprite.scale_x = scaler.r_x(CAR_LSIZE[0]) / car_img.width
         car_sprite.scale_y = scaler.r_y(CAR_LSIZE[1]) / car_img.height
@@ -246,7 +256,7 @@ class Label(Thing):
 
 
 if __name__ == "__main__":
-    ctx0 = Context(size=(1200, 1200), lsize=LSIZE, lg=(0.0, -10.0))
+    ctx0 = Context(size=(1200, 1000), lsize=LSIZE, lg=(0.0, -10.0))
 
     car_chart_lpos = (
         i_mrnd(CHART_LSIZE[0]),
@@ -341,6 +351,12 @@ if __name__ == "__main__":
                 car.show_label()
                 for gl in guideline_things:
                     gl.show()
+
+        if DISCRETE_MOEBIUS:
+            car_n_clpos = (
+                (car_n_clpos[0] + LSIZE[0]) % LSIZE[0],
+                (car_n_clpos[1] + LSIZE[1]) % LSIZE[1],
+            )
 
         if car_n_clpos != car.chart_lpos:
             car.update_label(
