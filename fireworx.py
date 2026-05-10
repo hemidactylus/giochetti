@@ -1,18 +1,22 @@
+import os
 from typing import Literal
 
 import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
-from egame.randomize import fluctuate, msrnd
+from egame.randomize import fluctuate, i_mrnd, msrnd
 from egame.things import PhysicsThing
 from egame.type_definitions import FPair
 
-MAX_GEN = 3
-NUM_FRAGMENTS = 20
+MAX_GEN = 5
+NUM_FRAGMENTS = 10
 DV_MOD = 12.0
 GEN_LC_BASE = 1.3
 GEN_LC_DELTA = 0.35
+
+BANANA_MODE = 2  # 1=banana, 2=various sprites
+BANANA_FACTOR = 10
 
 LSIZE = (16, 10)
 SIZE = (1600, 1000)
@@ -25,6 +29,22 @@ COLORS = [
     (0, 255, 255, 255),
     (100, 0, 215, 255),
 ]
+
+SPRITE_ROOT = os.path.normpath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "firework_images",
+    )
+)
+
+if BANANA_MODE == 1:
+    BANANA_SPRITES = [pyglet.image.load(os.path.join(SPRITE_ROOT, "banana.png"))]
+else:
+    BANANA_SPRITES = [
+        pyglet.image.load(os.path.join(SPRITE_ROOT, f))
+        for f in os.listdir(SPRITE_ROOT)
+        if f[-4:] == ".png"
+    ]
 
 
 class Exploder(PhysicsThing):
@@ -41,8 +61,23 @@ class Exploder(PhysicsThing):
         scaler: Scaler,
     ) -> None:
         self.gen = gen
-        rad = max(0.15 - self.gen * 0.04, 0.02)
-        ball = pyglet.shapes.Circle(0, 0, scaler.r_x(rad), color=COLORS[self.gen])
+        rad: float
+        if BANANA_MODE == 0:
+            rad = max(0.15 * (0.66 ** self.gen), 0.02)
+        else:
+            rad = 15 * max(0.15 * (0.66 ** self.gen), 0.003)
+
+        ball: pyglet.shapes.Circle | pyglet.sprite.Sprite
+        if BANANA_MODE == 0:
+            ball = pyglet.shapes.Circle(0, 0, scaler.r_x(rad), color=COLORS[self.gen % len(COLORS)])
+        else:
+            tgt_i = i_mrnd(1 if BANANA_MODE == 1 else len(BANANA_SPRITES))
+            x = scaler.r_x(lpos[0])
+            y = scaler.r_x(lpos[1])
+            ball = pyglet.sprite.Sprite(BANANA_SPRITES[tgt_i], x=x, y=y)
+            ball.scale_x = scaler.r_x(rad) / ball.width  # type: ignore[attr-defined]
+            ball.scale_y = scaler.r_y(rad) / ball.height  # type: ignore[attr-defined]
+
         PhysicsThing.__init__(
             self,
             lpos=lpos,
