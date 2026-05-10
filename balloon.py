@@ -4,6 +4,7 @@ import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
+from egame.messenger import Messenger
 from egame.randomize import fluctuate, i_mrnd, rnd
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import Drawable, FPair
@@ -136,34 +137,6 @@ class Balloon(PhysicsThing):
             raise ValueError
 
 
-class Messenger(Thing):
-    label: pyglet.text.Label
-
-    def __init__(self, text: str, scaler: Scaler) -> None:
-        self.label = pyglet.text.Label(
-            text,
-            font_name="Times New Roman",
-            font_size=scaler.r_x(2),
-            x=0.5 * LSIZE[0],
-            y=0.5 * LSIZE[1],
-            anchor_x="center",
-            anchor_y="center",
-            color=(40, 255, 60, 128),
-        )
-        Thing.__init__(
-            self,
-            lpos=(0.5 * LSIZE[0], 0.5 * LSIZE[1]),
-            lsize=LSIZE,
-            sprites={"l": self.label},
-            sprite_offsets={"l": (0, 0)},
-            t0_s=0.0,
-            scaler=scaler,
-        )
-
-    def set_text(self, text: str) -> None:
-        self.label.text = text
-
-
 class Scenery(Thing):
     def __init__(self, scaler: Scaler) -> None:
         ground = pyglet.shapes.Rectangle(
@@ -252,7 +225,13 @@ if __name__ == "__main__":
 
     ctx0.push_thing(Scenery(scaler=ctx0.scaler))
     ctx0.push_thing(balloon)
-    messenger = Messenger("i = inizia", scaler=ctx0.scaler)
+    messenger = Messenger(
+        "i = inizia",
+        font_lsize=2,
+        color=(40, 255, 60, 128),
+        scaler=ctx0.scaler,
+        context=ctx0,
+    )
     ctx0.push_thing(messenger)
 
     def on_k_p(ctx: Context, symbol: int, modifiers: int) -> Literal[True] | None:

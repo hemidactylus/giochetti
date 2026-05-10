@@ -63,13 +63,15 @@ class Exploder(PhysicsThing):
         self.gen = gen
         rad: float
         if BANANA_MODE == 0:
-            rad = max(0.15 * (0.66 ** self.gen), 0.02)
+            rad = max(0.15 * (0.66**self.gen), 0.02)
         else:
-            rad = 15 * max(0.15 * (0.66 ** self.gen), 0.003)
+            rad = 15 * max(0.15 * (0.66**self.gen), 0.003)
 
         ball: pyglet.shapes.Circle | pyglet.sprite.Sprite
         if BANANA_MODE == 0:
-            ball = pyglet.shapes.Circle(0, 0, scaler.r_x(rad), color=COLORS[self.gen % len(COLORS)])
+            ball = pyglet.shapes.Circle(
+                0, 0, scaler.r_x(rad), color=COLORS[self.gen % len(COLORS)]
+            )
         else:
             tgt_i = i_mrnd(1 if BANANA_MODE == 1 else len(BANANA_SPRITES))
             x = scaler.r_x(lpos[0])
