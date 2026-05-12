@@ -15,7 +15,7 @@ PLAYER_LSIZE = (0.25, 0.6)
 PLAYER_NOSE_RADIUS = 0.05
 PLAYER_JUMP_VY = 5.0
 
-PLAYER_V = 2.5
+PLAYER_V = 4.5
 
 BORDER_BLOCK_WIDTH = 0.2
 
@@ -215,7 +215,7 @@ if __name__ == "__main__":
 
     player = Player(
         lpos=(0.5 * LSIZE[0], 6 + BORDER_BLOCK_WIDTH),
-        lv=(8, 4),
+        lv=(3, 3.5),
         scaler=ctx0.scaler,
     )
 

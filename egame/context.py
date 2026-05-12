@@ -139,7 +139,7 @@ class Context:
             if self._tick:
                 self._tick(self, dt, self.t_s)
 
-        pyglet.clock.schedule_interval(update, 1 / 20.0)  # 1 / 60.0)
+        pyglet.clock.schedule_interval(update, 1 / 60.0)
         self.started = True
         return self._window
 
