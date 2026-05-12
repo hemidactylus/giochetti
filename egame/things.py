@@ -135,8 +135,8 @@ class PhysicsThing(Thing):
         else:
             new_lv = self.lv
         new_lpos = (
-            self.lpos[0] + self.lv[0] * dt,
-            self.lpos[1] + self.lv[1] * dt,
+            self.lpos[0] + new_lv[0] * dt,
+            self.lpos[1] + new_lv[1] * dt,
         )
         return new_lv, new_lpos
 

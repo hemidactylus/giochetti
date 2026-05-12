@@ -4,6 +4,8 @@ from egame.geometry import Scaler
 from egame.things import Thing
 from egame.type_definitions import FPair
 
+EPSILON = 0.0001
+
 
 class RectangleBlock(Thing):
     def __init__(
@@ -33,7 +35,7 @@ class RectangleBlock(Thing):
             scaler=scaler,
         )
 
-    def contains(self, lpos: FPair, epsilon: float = 0.0) -> bool:
+    def contains(self, lpos: FPair, epsilon: float = EPSILON) -> bool:
         return (
             lpos[0] + epsilon > self.lpos[0]
             and lpos[0] - epsilon < self.lpos[0] + self.lsize[0]
@@ -45,13 +47,13 @@ class RectangleBlock(Thing):
         lpx, lpy = lp
         qx: int
         qy: int
-        if lpx < self.lpos[0]:
+        if lpx <= self.lpos[0]:
             qx = 0
         elif lpx < self.lpos[0] + self.lsize[0]:
             qx = 1
         else:
             qx = 2
-        if lpy < self.lpos[1]:
+        if lpy <= self.lpos[1]:
             qy = 0
         elif lpy < self.lpos[1] + self.lsize[1]:
             qy = 1
@@ -68,7 +70,10 @@ class RectangleBlock(Thing):
         else:
             # compute point
             ly = lp1[1] - (lp1[0] - lx) * (lp1[1] - lp0[1]) / (lp1[0] - lp0[0])
-            if ly >= self.lpos[1] and ly <= self.lpos[1] + self.lsize[1]:
+            if (
+                ly >= self.lpos[1] - EPSILON
+                and ly <= self.lpos[1] + self.lsize[1] + EPSILON
+            ):
                 ly_low, ly_high = sorted((lp0[1], lp1[1]))
                 if ly >= ly_low and ly <= ly_high:
                     return (lx, ly)
@@ -86,7 +91,10 @@ class RectangleBlock(Thing):
         else:
             # compute point
             lx = lp1[0] - (lp1[1] - ly) * (lp0[0] - lp1[0]) / (lp0[1] - lp1[1])
-            if lx >= self.lpos[0] and lx <= self.lpos[0] + self.lsize[0]:
+            if (
+                lx >= self.lpos[0] - EPSILON
+                and lx <= self.lpos[0] + self.lsize[0] + EPSILON
+            ):
                 lx_low, lx_high = sorted((lp0[0], lp1[0]))
                 if lx >= lx_low and lx <= lx_high:
                     return (lx, ly)
