@@ -6,7 +6,7 @@ from egame.context import Context
 from egame.geometry import Scaler
 from egame.randomize import i_mrnd, rrnd  # noqa: F401
 from egame.things import PhysicsThing, Thing  # noqa F821
-from egame.type_definitions import FPair
+from egame.type_definitions import Color, FPair
 
 LSIZE = (16, 10)
 SIZE = (1600, 1000)
@@ -20,14 +20,14 @@ FRICTION_PER_S = 0.1
 
 class Ball(Thing):
     vel: FPair
-    color: tuple[int, int, int, int]
+    color: Color
     lgy: float
 
     def __init__(
         self,
         *,
         lpos: FPair,
-        color: tuple[int, int, int, int],
+        color: Color,
         scaler: Scaler,
     ) -> None:
         self.vel = (2.4, 1.8)

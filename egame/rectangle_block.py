@@ -2,28 +2,33 @@ import pyglet
 
 from egame.geometry import Scaler
 from egame.things import Thing
-from egame.type_definitions import FPair
+from egame.type_definitions import Color, FPair
 
 EPSILON = 0.0001
 
 
 class RectangleBlock(Thing):
+    color: Color
+    block: pyglet.shapes.Rectangle
+
     def __init__(
         self,
         *,
         lpos: FPair,
         lsize: FPair,
-        color: tuple[int, int, int, int],
+        color: Color,
         name: str,
         scaler: Scaler,
     ) -> None:
+        self.color = color
         block = pyglet.shapes.Rectangle(
             scaler.r_x(lpos[0]),
             scaler.r_y(lpos[1]),
             scaler.r_x(lsize[0]),
             scaler.r_y(lsize[1]),
-            color=color,
+            color=self.color,
         )
+        self.block = block
         Thing.__init__(
             self,
             lpos=lpos,
@@ -34,6 +39,9 @@ class RectangleBlock(Thing):
             name=name,
             scaler=scaler,
         )
+
+    def update_color(self, color: Color) -> None:
+        self.block.color = color
 
     def contains(self, lpos: FPair, epsilon: float = EPSILON) -> bool:
         return (

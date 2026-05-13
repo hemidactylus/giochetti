@@ -13,11 +13,14 @@ SIZE = (1600, 1000)
 
 PLAYER_LSIZE = (0.25, 0.6)
 PLAYER_NOSE_RADIUS = 0.05
-PLAYER_JUMP_VY = 5.0
 
+PLAYER_JUMP_VY = 6.5
 PLAYER_V = 4.5
 
-BORDER_BLOCK_WIDTH = 0.2
+BORDER_BLOCK_WIDTH = 0.35
+BLOCK_COLOR = (25, 90, 0, 255)
+G_BLOCK_COLOR = (120, 220, 80, 255)
+SKY_COLOR = (80, 130, 255, 255)
 
 GRAVITY_LMOD = 10
 
@@ -193,7 +196,7 @@ class Scenery(Thing):
             scaler.r_y(0),
             scaler.r_x(LSIZE[0]),
             scaler.r_y(LSIZE[1]),
-            color=(50, 90, 255, 255),
+            color=SKY_COLOR,
         )
         Thing.__init__(
             self,
@@ -214,60 +217,99 @@ if __name__ == "__main__":
     ctx0 = Context(size=SIZE, lsize=LSIZE, lg=(0.0, -GRAVITY_LMOD), time_factor=1.0)
 
     player = Player(
-        lpos=(0.5 * LSIZE[0], 6 + BORDER_BLOCK_WIDTH),
-        lv=(3, 3.5),
+        lpos=(15, 1),
+        lv=(-3, 3.5),
         scaler=ctx0.scaler,
     )
-
-    ctx0.state["keys_map"] = {}
-    ctx0.state["gravity_dir"] = 3
 
     ctx0.push_thing(Scenery(scaler=ctx0.scaler))
 
     # blocks
-    ctx0.push_thing(
-        RectangleBlock(
-            lpos=(0, 0),
-            lsize=(LSIZE[0], BORDER_BLOCK_WIDTH),
-            color=(0, 0, 96, 255),
-            name="block0",
-            scaler=ctx0.scaler,
-        )
-    )
-    ctx0.push_thing(
-        RectangleBlock(
+    border_blocks = {
+        0: RectangleBlock(
             lpos=(LSIZE[0] - BORDER_BLOCK_WIDTH, 0),
             lsize=(BORDER_BLOCK_WIDTH, LSIZE[1]),
-            color=(0, 0, 96, 255),
-            name="block1",
+            color=BLOCK_COLOR,
+            name="block0",
             scaler=ctx0.scaler,
-        )
-    )
-    ctx0.push_thing(
-        RectangleBlock(
+        ),
+        1: RectangleBlock(
             lpos=(0, LSIZE[1] - BORDER_BLOCK_WIDTH),
             lsize=(LSIZE[0], BORDER_BLOCK_WIDTH),
-            color=(0, 0, 96, 255),
-            name="block2",
+            color=BLOCK_COLOR,
+            name="block1",
             scaler=ctx0.scaler,
-        )
-    )
-    ctx0.push_thing(
-        RectangleBlock(
+        ),
+        2: RectangleBlock(
             lpos=(0, 0),
             lsize=(BORDER_BLOCK_WIDTH, LSIZE[1]),
-            color=(0, 0, 96, 255),
+            color=BLOCK_COLOR,
+            name="block2",
+            scaler=ctx0.scaler,
+        ),
+        3: RectangleBlock(
+            lpos=(0, 0),
+            lsize=(LSIZE[0], BORDER_BLOCK_WIDTH),
+            color=BLOCK_COLOR,
             name="block3",
             scaler=ctx0.scaler,
-        )
-    )
+        ),
+    }
+
+    for b_block in border_blocks.values():
+        ctx0.push_thing(b_block)
+
+    ctx0.state["keys_map"] = {}
+
+    def update_gravity_dir(ctx: Context, new_value: int) -> None:
+        ctx.state["gravity_dir"] = new_value
+        for bb_dir, b_block in border_blocks.items():
+            b_block.update_color(G_BLOCK_COLOR if bb_dir == new_value else BLOCK_COLOR)
+
+    update_gravity_dir(ctx0, 3)
 
     ctx0.push_thing(
         RectangleBlock(
-            lpos=(3, 1),
-            lsize=(LSIZE[0] - 5, BORDER_BLOCK_WIDTH),
-            color=(0, 0, 96, 255),
-            name="block_temp",
+            lpos=(4, 1.7),
+            lsize=(8, BORDER_BLOCK_WIDTH),
+            color=BLOCK_COLOR,
+            name="block_step0",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(BORDER_BLOCK_WIDTH - 0.01, 3.4),
+            lsize=(2, BORDER_BLOCK_WIDTH),
+            color=BLOCK_COLOR,
+            name="block_step1",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(4, 5.1),
+            lsize=(4, BORDER_BLOCK_WIDTH),
+            color=BLOCK_COLOR,
+            name="block_step2",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(2, 6.6),
+            lsize=(3, BORDER_BLOCK_WIDTH),
+            color=BLOCK_COLOR,
+            name="block_step3",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(5, 8),
+            lsize=(5, BORDER_BLOCK_WIDTH),
+            color=BLOCK_COLOR,
+            name="block_step4",
             scaler=ctx0.scaler,
         )
     )
@@ -293,7 +335,7 @@ if __name__ == "__main__":
                 else:  # gravity_dir == 1
                     player.lv = (player.lv[0], -PLAYER_JUMP_VY)
         if symbol == pyglet.window.key.Z:
-            ctx.state["gravity_dir"] = (ctx.state["gravity_dir"] + 1) % 4
+            update_gravity_dir(ctx, (ctx.state["gravity_dir"] + 1) % 4)
             if ctx.state["gravity_dir"] == 2:
                 ctx.lg = (-GRAVITY_LMOD, 0)
             elif ctx.state["gravity_dir"] == 3:
