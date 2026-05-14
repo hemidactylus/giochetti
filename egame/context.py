@@ -73,6 +73,20 @@ class Context:
         thing.t0_s = self.t_s  # TODO make a setter method
         self.things.append(thing)
 
+    def pop_things(self, filter: Callable[[Thing], bool]) -> None:
+        dying_indices: set[int] = set()
+        for thing_i, thing in enumerate(self.things):
+            if filter(thing):
+                dying_indices.add(thing_i)
+        if dying_indices:
+            for dying_i in dying_indices:
+                self.things[dying_i].die()
+            self.things = [
+                thing
+                for thing_i, thing in enumerate(self.things)
+                if thing_i not in dying_indices
+            ]
+
     def _make_window(self) -> None:
         # TODO fullscreen support
         self._window = pyglet.window.Window(  # type: ignore[abstract]

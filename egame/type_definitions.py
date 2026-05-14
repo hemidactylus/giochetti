@@ -10,6 +10,7 @@ Drawable: TypeAlias = (
     pyglet.shapes.Box
     | pyglet.shapes.Circle
     | pyglet.shapes.Rectangle
+    | pyglet.shapes.Line
     | pyglet.sprite.Sprite
     | pyglet.text.Label
 )

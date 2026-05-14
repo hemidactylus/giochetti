@@ -15,7 +15,7 @@ DV_MOD = 12.0
 GEN_LC_BASE = 1.3
 GEN_LC_DELTA = 0.35
 
-BANANA_MODE = 2  # 1=banana, 2=various sprites
+BANANA_MODE = 0  # 1=banana, 2=various sprites
 BANANA_FACTOR = 10
 
 LSIZE = (16, 10)
