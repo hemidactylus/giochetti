@@ -9,7 +9,7 @@ from egame.things import PhysicsThing, Thing
 from egame.type_definitions import FPair
 
 LSIZE = (16, 10)
-SIZE = (1600, 1000)
+SIZE = None  # (1600, 1000)
 
 PLAYER_LSIZE = (0.25, 0.6)
 PLAYER_NOSE_RADIUS = 0.05

@@ -26,7 +26,7 @@ CAR_LABEL_FORMAT = "(x={x}, y={y})"
 MOVEMENT_STYLE = "discrete"
 # MOVEMENT_STYLE = "continuum"
 # MOVEMENT_STYLE = "physical"
-DISCRETE_MOEBIUS = True
+DISCRETE_TORUS = False  # True
 
 CONTINUUM_CAR_LV = 2.5
 CONTINUUM_CAR_LA = 8.0
@@ -351,7 +351,7 @@ if __name__ == "__main__":
                 for gl in guideline_things:
                     gl.show()
 
-        if DISCRETE_MOEBIUS:
+        if DISCRETE_TORUS:
             car_n_clpos = (
                 (car_n_clpos[0] + LSIZE[0]) % LSIZE[0],
                 (car_n_clpos[1] + LSIZE[1]) % LSIZE[1],

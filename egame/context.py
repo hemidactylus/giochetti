@@ -29,13 +29,12 @@ class Context:
     def __init__(
         self,
         *,
-        size: IPair,
+        size: IPair | None,
         lsize: FPair,
         lg: FPair = (0.0, 0.0),
         time_factor: float = 1.0,
         title: str = "",
     ) -> None:
-        self.size = size
         self.lsize = lsize
         self.lg = lg
         self.time_factor = time_factor
@@ -47,8 +46,8 @@ class Context:
         self.t_s = 0.0
         self.things = []
         self.state = {}
-        self.scaler = Scaler(size=size, lsize=lsize)
-        self._make_window()
+        self.size = self._make_window(size)
+        self.scaler = Scaler(size=self.size, lsize=lsize)
 
     def on_key_press(
         self, okp: Callable[["Context", int, int], Literal[True] | None]
@@ -87,14 +86,21 @@ class Context:
                 if thing_i not in dying_indices
             ]
 
-    def _make_window(self) -> None:
-        # TODO fullscreen support
-        self._window = pyglet.window.Window(  # type: ignore[abstract]
-            width=self.size[0],
-            height=self.size[1],
-            caption=self.title,
-            fullscreen=False,
-        )
+    def _make_window(self, size: IPair | None) -> IPair:
+        if size:
+            self._window = pyglet.window.Window(  # type: ignore[abstract]
+                width=size[0],
+                height=size[1],
+                caption=self.title,
+                fullscreen=False,
+            )
+            return size
+        else:
+            self._window = pyglet.window.Window(  # type: ignore[abstract]
+                caption=self.title,
+                fullscreen=True,
+            )
+            return (self._window.width, self._window.height)
 
     def thing_by_name(self, name: str) -> Thing | None:
         matches = [thg for thg in self.things if thg.name == name]
