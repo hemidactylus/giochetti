@@ -11,8 +11,8 @@ from egame.type_definitions import FPair
 LSIZE = (16, 10)
 SIZE = None  # (1600, 1000)
 
-PLAYER_LSIZE = (0.25, 0.6)
-PLAYER_NOSE_RADIUS = 0.05
+PLAYER_LSIZE = (0.4, 0.7)
+PLAYER_NOSE_RADIUS = 0.1
 
 PLAYER_JUMP_VY = 6.5
 PLAYER_V = 4.5
@@ -27,6 +27,8 @@ GRAVITY_LMOD = 10
 
 class Player(PhysicsThing):
     anchored: bool
+    loffsets: list[FPair]
+    n_offset_state: tuple[int, int]
 
     def __init__(
         self,
@@ -49,6 +51,13 @@ class Player(PhysicsThing):
             color=(10, 10, 10, 255),
         )
         self.anchored = False
+        self.loffsets = [
+            (0, 0),
+            (PLAYER_LSIZE[0], 0),
+            (PLAYER_LSIZE[0], PLAYER_LSIZE[1]),
+            (0, PLAYER_LSIZE[1]),
+        ]
+        self.n_offset_state = (1, 0)
         PhysicsThing.__init__(
             self,
             lpos=lpos,
@@ -68,23 +77,90 @@ class Player(PhysicsThing):
             scaler=scaler,
         )
 
-    def _orient(self, dir: int) -> None:
-        n_off_factor: float
-        if dir > 0:
-            n_off_factor = 1.0
-        elif dir < 0:
-            n_off_factor = 0.0
-        else:
-            n_off_factor = 0.5
-        self.update_sprite_offset(
-            "n",
-            (
-                n_off_factor * PLAYER_LSIZE[0],
-                0.8 * PLAYER_LSIZE[1],
-            ),
-        )
+    def orient(self, g_dir: int, lv: FPair) -> None:
+        norm_v: float = 0.0
+        if g_dir == 1:
+            norm_v = lv[0]
+        elif g_dir == 3:
+            norm_v = -lv[0]
+        elif g_dir == 2:
+            norm_v = lv[1]
+        elif g_dir == 0:
+            norm_v = -lv[1]
+        noff: int = 0
+        if norm_v > 0:
+            noff = 1
+        elif norm_v < 0:
+            noff = -1
+        # now calculate the actual offset
+        n_offset_state = (g_dir, noff)
+        if n_offset_state != self.n_offset_state:
+            self.n_offset_state = n_offset_state
+            actual_loffset: FPair = (0, 0)
+            if g_dir == 1:
+                actual_loffset = (
+                    PLAYER_LSIZE[0] * (noff + 1) / 2,
+                    PLAYER_LSIZE[1] * 0.2,
+                )
+            elif g_dir == 3:
+                actual_loffset = (
+                    PLAYER_LSIZE[0] * (-noff + 1) / 2,
+                    PLAYER_LSIZE[1] * 0.8,
+                )
+            elif g_dir == 0:
+                actual_loffset = (
+                    PLAYER_LSIZE[0] * 0.2,
+                    PLAYER_LSIZE[1] * (-noff + 1) / 2,
+                )
+            elif g_dir == 2:
+                actual_loffset = (
+                    PLAYER_LSIZE[0] * 0.8,
+                    PLAYER_LSIZE[1] * (noff + 1) / 2,
+                )
+            self.update_sprite_offset("n", actual_loffset)
 
-    def dies_on_update(self, ctx: "Context", dt: float, t_s: float) -> bool:
+    def extended_speculate_motion_and_collide(
+        self,
+        ctx: Context,
+        *,
+        dt: float,
+        t_s: float,
+        feels_g: bool,
+        blocks: list[RectangleBlock],
+        loffsets: list[FPair],
+    ) -> tuple[FPair, FPair, list[tuple[FPair, int]]]:
+        new_lv, new_lpos = self.compute_motion(ctx, dt=dt, t_s=t_s, feels_g=feels_g)
+        collision_pairs: list[tuple[FPair, int]] = []
+        for loffset in loffsets:
+            offset_lpos = (
+                self.lpos[0] + loffset[0],
+                self.lpos[1] + loffset[1],
+            )
+            offset_new_lpos = (
+                new_lpos[0] + loffset[0],
+                new_lpos[1] + loffset[1],
+            )
+            offset_collision_pairs: list[tuple[FPair, int]] = [
+                olpp
+                for olpp in [
+                    block.collides(offset_lpos, offset_new_lpos) for block in blocks
+                ]
+                if olpp is not None
+            ]
+            collision_pairs += [
+                (
+                    (
+                        olpp[0][0] - loffset[0],
+                        olpp[0][1] - loffset[1],
+                    ),
+                    olpp[1],
+                )
+                for olpp in offset_collision_pairs
+            ]
+
+        return (new_lv, new_lpos, collision_pairs)
+
+    def dies_on_update(self, ctx: Context, dt: float, t_s: float) -> bool:
         """
         PLAN:
         try-advance with gravity.
@@ -106,12 +182,16 @@ class Player(PhysicsThing):
             if thg.name[:5] == "block"
         ]
 
-        new_lv_g, new_lpos_g = self.compute_motion(ctx, dt=dt, t_s=t_s, feels_g=True)
-        collision_pairs_g: list[tuple[FPair, int]] = [
-            lpp
-            for lpp in [block.collides(self.lpos, new_lpos_g) for block in blocks]
-            if lpp is not None
-        ]
+        new_lv_g, new_lpos_g, collision_pairs_g = (
+            self.extended_speculate_motion_and_collide(
+                ctx,
+                dt=dt,
+                t_s=t_s,
+                feels_g=True,
+                blocks=blocks,
+                loffsets=self.loffsets,
+            )
+        )
         if collision_pairs_g == []:
             self.lv = new_lv_g
             self.update_lpos(new_lpos_g)
@@ -120,14 +200,16 @@ class Player(PhysicsThing):
             g_dirs = [(coll_dir_g + 2) % 4 for _, coll_dir_g in collision_pairs_g]
             has_a_below = ctx.state["gravity_dir"] in g_dirs
             # g-computation has hit blockers
-            new_lv_0, new_lpos_0 = self.compute_motion(
-                ctx, dt=dt, t_s=t_s, feels_g=False
+            new_lv_0, new_lpos_0, collision_pairs_0 = (
+                self.extended_speculate_motion_and_collide(
+                    ctx,
+                    dt=dt,
+                    t_s=t_s,
+                    feels_g=False,
+                    blocks=blocks,
+                    loffsets=self.loffsets,
+                )
             )
-            collision_pairs_0: list[tuple[FPair, int]] = [
-                lpp
-                for lpp in [block.collides(self.lpos, new_lpos_0) for block in blocks]
-                if lpp is not None
-            ]
             if collision_pairs_0 == []:
                 self.lv = new_lv_0
                 self.update_lpos(new_lpos_0)
@@ -159,34 +241,6 @@ class Player(PhysicsThing):
                 self.anchored = has_a_below
 
         return self.out_of_boundaries(ctx)
-
-
-# class Messenger(Thing):
-#     label: pyglet.text.Label
-
-#     def __init__(self, text: str, scaler: Scaler) -> None:
-#         self.label = pyglet.text.Label(
-#             text,
-#             font_name="Times New Roman",
-#             font_size=scaler.r_x(2),
-#             x=0.5 * LSIZE[0],
-#             y=0.5 * LSIZE[1],
-#             anchor_x="center",
-#             anchor_y="center",
-#             color=(40, 255, 60, 128),
-#         )
-#         Thing.__init__(
-#             self,
-#             lpos=(0.5 * LSIZE[0], 0.5 * LSIZE[1]),
-#             lsize=LSIZE,
-#             sprites={"l": self.label},
-#             sprite_offsets={"l": (0, 0)},
-#             t0_s=0.0,
-#             scaler=scaler,
-#         )
-
-#     def set_text(self, text: str) -> None:
-#         self.label.text = text
 
 
 class Scenery(Thing):
@@ -370,6 +424,7 @@ if __name__ == "__main__":
                 player.lv = (player.lv[0], pl_rel_lvx)
             else:  # gravity_dir == 1
                 player.lv = (-pl_rel_lvx, player.lv[1])
+            player.orient(ctx.state["gravity_dir"], player.lv)
 
     ctx0.on_key_press(on_k_p)
     ctx0.on_key_release(on_k_r)
