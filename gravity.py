@@ -1,15 +1,17 @@
+import sys
 from typing import Literal
 
 import pyglet
 
 from egame.context import Context
 from egame.geometry import Scaler
+from egame.randomize import i_mrnd, rnd
 from egame.rectangle_block import RectangleBlock
 from egame.things import PhysicsThing, Thing
 from egame.type_definitions import FPair
 
 LSIZE = (16, 10)
-SIZE = None  # (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 PLAYER_LSIZE = (0.4, 0.7)
 PLAYER_NOSE_RADIUS = 0.1
@@ -23,6 +25,13 @@ G_BLOCK_COLOR = (120, 220, 80, 255)
 SKY_COLOR = (80, 130, 255, 255)
 
 GRAVITY_LMOD = 10
+
+# GRAVITY_CHANGE_MODE = "none"
+GRAVITY_CHANGE_MODE = "z"
+# GRAVITY_CHANGE_MODE = "random"
+
+GRAVITY_CHANGE_CHANCE_PER_S = 0.3
+GRAVITY_REFRACTORY_TIME_S = 3
 
 
 class Player(PhysicsThing):
@@ -53,10 +62,12 @@ class Player(PhysicsThing):
         self.anchored = False
         self.loffsets = [
             (0, 0),
+            (0.5 * PLAYER_LSIZE[0], 0),
             (PLAYER_LSIZE[0], 0),
             (PLAYER_LSIZE[0], 0.5 * PLAYER_LSIZE[1]),
             (0, 0.5 * PLAYER_LSIZE[1]),
             (PLAYER_LSIZE[0], PLAYER_LSIZE[1]),
+            (0.5 * PLAYER_LSIZE[0], PLAYER_LSIZE[1]),
             (0, PLAYER_LSIZE[1]),
         ]
         self.n_offset_state = (1, 0)
@@ -316,11 +327,20 @@ if __name__ == "__main__":
         ctx0.push_thing(b_block)
 
     ctx0.state["keys_map"] = {}
+    ctx0.state["last_g_flip"] = 0.0
 
     def update_gravity_dir(ctx: Context, new_value: int) -> None:
         ctx.state["gravity_dir"] = new_value
         for bb_dir, b_block in border_blocks.items():
             b_block.update_color(G_BLOCK_COLOR if bb_dir == new_value else BLOCK_COLOR)
+        if new_value == 2:
+            ctx.lg = (-GRAVITY_LMOD, 0)
+        elif new_value == 3:
+            ctx.lg = (0, -GRAVITY_LMOD)
+        elif new_value == 0:
+            ctx.lg = (GRAVITY_LMOD, 0)
+        else:  # gravity_dir == 1
+            ctx.lg = (0, GRAVITY_LMOD)
 
     update_gravity_dir(ctx0, 3)
 
@@ -369,6 +389,33 @@ if __name__ == "__main__":
             scaler=ctx0.scaler,
         )
     )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(14, 4),
+            lsize=(BORDER_BLOCK_WIDTH, 3),
+            color=BLOCK_COLOR,
+            name="block_side1",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(12, 7),
+            lsize=(BORDER_BLOCK_WIDTH, 2),
+            color=BLOCK_COLOR,
+            name="block_side2",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(10.3, 3.5),
+            lsize=(BORDER_BLOCK_WIDTH, 2),
+            color=BLOCK_COLOR,
+            name="block_side3",
+            scaler=ctx0.scaler,
+        )
+    )
 
     ctx0.push_thing(player)
     # messenger = Messenger("Hello", scaler=ctx0.scaler)
@@ -390,16 +437,8 @@ if __name__ == "__main__":
                     player.lv = (-PLAYER_JUMP_VY, player.lv[1])
                 else:  # gravity_dir == 1
                     player.lv = (player.lv[0], -PLAYER_JUMP_VY)
-        if symbol == pyglet.window.key.Z:
+        if symbol == pyglet.window.key.Z and GRAVITY_CHANGE_MODE == "z":
             update_gravity_dir(ctx, (ctx.state["gravity_dir"] + 1) % 4)
-            if ctx.state["gravity_dir"] == 2:
-                ctx.lg = (-GRAVITY_LMOD, 0)
-            elif ctx.state["gravity_dir"] == 3:
-                ctx.lg = (0, -GRAVITY_LMOD)
-            elif ctx.state["gravity_dir"] == 0:
-                ctx.lg = (GRAVITY_LMOD, 0)
-            else:  # gravity_dir == 1
-                ctx.lg = (0, GRAVITY_LMOD)
         return None
 
     def on_k_r(
@@ -411,6 +450,15 @@ if __name__ == "__main__":
         return None
 
     def tk(ctx: Context, dt: float, t: float) -> None:
+        # grav flip:
+        if GRAVITY_CHANGE_MODE == "random":
+            if t - ctx.state["last_g_flip"] >= GRAVITY_REFRACTORY_TIME_S:
+                chance = rnd()
+                if chance <= GRAVITY_CHANGE_CHANCE_PER_S * dt:
+                    new_g_dir = i_mrnd(4)
+                    ctx.state["last_g_flip"] = t
+                    update_gravity_dir(ctx, new_g_dir)
+        # player motion:
         if player.anchored:
             pl_rel_lvx = 0.0
             if ctx.state["keys_map"].get(pyglet.window.key.LEFT):
