@@ -87,6 +87,35 @@ class Thing:
         for sprite in self.sprites.values():
             sprite.visible = True
 
+    def out_of_boundaries(self, ctx: "Context", lpos: FPair) -> bool:
+        if lpos[0] + self.lsize[0] < 0:
+            return True
+        if lpos[1] + self.lsize[1] < 0:
+            return True
+        if lpos[0] > ctx.lsize[0]:
+            return True
+        if lpos[1] > ctx.lsize[1]:
+            return True
+        return False
+
+    def partially_out_of_boundaries(self, ctx: "Context", lpos: FPair) -> bool:
+        if lpos[0] < 0:
+            return True
+        if lpos[1] < 0:
+            return True
+        if lpos[0] + self.lsize[0] > ctx.lsize[0]:
+            return True
+        if lpos[1] + self.lsize[1] > ctx.lsize[1]:
+            return True
+        return False
+
+    @property
+    def center_lpos(self) -> FPair:
+        return (
+            self.lpos[0] + 0.5 * self.lsize[0],
+            self.lpos[1] + 0.5 * self.lsize[1],
+        )
+
 
 class PhysicsThing(Thing):
     lv: FPair
@@ -148,15 +177,4 @@ class PhysicsThing(Thing):
         )
         self.lv = new_lv
         self.update_lpos(new_lpos)
-        return self.out_of_boundaries(ctx)
-
-    def out_of_boundaries(self, ctx: "Context") -> bool:
-        if self.lpos[0] + self.lsize[0] < 0:
-            return True
-        if self.lpos[1] + self.lsize[1] < 0:
-            return True
-        if self.lpos[0] > ctx.lsize[0]:
-            return True
-        if self.lpos[1] > ctx.lsize[1]:
-            return True
-        return False
+        return self.out_of_boundaries(ctx, self.lpos)

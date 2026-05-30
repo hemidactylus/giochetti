@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 block.lpos[0] + blockd[0],
                 block.lpos[1] + blockd[1],
             )
-            block.update_lpos((new_block_lpos[0], new_block_lpos[1]))
+            block.update_lpos(new_block_lpos)
 
     ctx0.on_key_press(on_k_p)
     ctx0.on_key_release(on_k_r)

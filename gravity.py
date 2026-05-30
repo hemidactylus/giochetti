@@ -253,7 +253,7 @@ class Player(PhysicsThing):
                 self.update_lpos(coll_lpos)
                 self.anchored = has_a_below
 
-        return self.out_of_boundaries(ctx)
+        return self.out_of_boundaries(ctx, self.lpos)
 
 
 class Scenery(Thing):
