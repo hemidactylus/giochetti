@@ -7,12 +7,12 @@ import pyglet
 from egame.context import Context
 from egame.geometry import Scaler
 from egame.things import Thing
-from egame.type_definitions import FPair
+from egame.type_definitions import Drawable, FPair
 
 LSIZE = (16, 10)
 SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
-FARMER_LSIZE = (1, 1)
+FARMER_LSIZE = (1, 2.4)
 SPHERE_LRADIUS = 0.2
 VEGETABLE_LSIZE = (1.5, 1.2)
 
@@ -43,7 +43,6 @@ class Vegetable(Thing):
         vegetable_key: int,
         scaler: Scaler,
     ) -> None:
-        # TODO precompute all images in the cache
         image = vegetable_image_map[vegetable_key]
         x = scaler.r_x(lpos[0])
         y = scaler.r_x(lpos[1])
@@ -67,42 +66,55 @@ class Vegetable(Thing):
 
 
 class Farmer(Thing):
+    xdir: int
+
     def __init__(
         self,
         *,
         lpos: FPair,
         scaler: Scaler,
     ) -> None:
-        body = pyglet.shapes.Rectangle(
-            scaler.r_x(lpos[0]),
-            scaler.r_y(lpos[1]),
-            scaler.r_x(FARMER_LSIZE[0]),
-            scaler.r_y(FARMER_LSIZE[1]),
-            color=(0, 0, 255, 255),
-        )
-        sphere = pyglet.shapes.Circle(
-            scaler.r_x(lpos[0] + 0.5 * FARMER_LSIZE[0]),
-            scaler.r_y(lpos[1] + 0.5 * FARMER_LSIZE[1]),
-            radius=scaler.r_x(SPHERE_LRADIUS),
-            color=(255, 10, 10, 255),
-        )
+        farmer_images = {
+            "c": pyglet.image.load(os.path.join(SPRITE_ROOT, "farmer_still.png")),
+            "l": pyglet.image.load(os.path.join(SPRITE_ROOT, "farmer_left.png")),
+            "r": pyglet.image.load(os.path.join(SPRITE_ROOT, "farmer_right.png")),
+        }
+        farmer_sprites: dict[str, Drawable] = {}
+        farmer_offsets: dict[str, FPair] = {}
+        for k, image in farmer_images.items():
+            x = scaler.r_x(lpos[0])
+            y = scaler.r_x(lpos[1])
+            sprite = pyglet.sprite.Sprite(image, x=x, y=y)
+            sprite.scale_x = scaler.r_x(FARMER_LSIZE[0]) / sprite.width  # type: ignore[attr-defined]
+            sprite.scale_y = scaler.r_y(FARMER_LSIZE[1]) / sprite.height  # type: ignore[attr-defined]
+            farmer_sprites[k] = sprite
+            farmer_offsets[k] = (0, 0)
+
         Thing.__init__(
             self,
             lpos=lpos,
             lsize=FARMER_LSIZE,
             name="farmer",
-            sprites={
-                "0": body,
-                "s": sphere,
-            },
-            sprite_offsets={
-                "0": (0, 0),
-                "s": (0.5 * FARMER_LSIZE[0], 0.5 * FARMER_LSIZE[1]),
-            },
+            sprites=farmer_sprites,
+            sprite_offsets=farmer_offsets,
             t0_s=0.0,
             scaler=scaler,
         )
 
+        self.xdir = 1
+        self.orient(0)
+
+    def orient(self, lvx: int) -> None:
+        xdir: int = 0
+        if lvx > 0:
+            xdir = 1
+        elif lvx < 0:
+            xdir = -1
+        if xdir != self.xdir:
+            self.xdir = xdir
+            sprite_on = {0: "c", 1: "r", -1: "l"}[xdir]
+            for k, v in self.sprites.items():
+                v.visible = k == sprite_on
 
 class Scenery(Thing):
     def __init__(self, scaler: Scaler) -> None:
@@ -169,6 +181,7 @@ if __name__ == "__main__":
             farmerv[0] -= FARMERV_MOD
         if ctx.state["keys_map"].get(pyglet.window.key.RIGHT):
             farmerv[0] += FARMERV_MOD
+        farmer.orient(farmerv[0])
         if farmerv != (0, 0):
             farmerd = (farmerv[0] * dt, farmerv[1] * dt)
             new_farmer_lpos = (
