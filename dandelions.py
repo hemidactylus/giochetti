@@ -12,6 +12,8 @@ from egame.type_definitions import Drawable, FPair
 LSIZE = (16, 10)
 SIZE = (1600, 1000)
 
+LAWN_COLOR = (70, 140, 70, 255)
+
 BLOCK_LSIZE = (1, 1)
 SPHERE_LRADIUS = 0.2
 
@@ -289,7 +291,7 @@ class Scenery(Thing):
             scaler.r_y(0),
             scaler.r_x(LSIZE[0]),
             scaler.r_y(LSIZE[1]),
-            color=(120, 200, 130, 255),
+            color=LAWN_COLOR,
         )
         Thing.__init__(
             self,
