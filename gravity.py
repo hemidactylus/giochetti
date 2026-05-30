@@ -54,6 +54,8 @@ class Player(PhysicsThing):
         self.loffsets = [
             (0, 0),
             (PLAYER_LSIZE[0], 0),
+            (PLAYER_LSIZE[0], 0.5 * PLAYER_LSIZE[1]),
+            (0, 0.5 * PLAYER_LSIZE[1]),
             (PLAYER_LSIZE[0], PLAYER_LSIZE[1]),
             (0, PLAYER_LSIZE[1]),
         ]
@@ -333,8 +335,8 @@ if __name__ == "__main__":
     )
     ctx0.push_thing(
         RectangleBlock(
-            lpos=(BORDER_BLOCK_WIDTH - 0.01, 3.4),
-            lsize=(2, BORDER_BLOCK_WIDTH),
+            lpos=(BORDER_BLOCK_WIDTH - 0.01, 3.45),
+            lsize=(2 + 0.15, BORDER_BLOCK_WIDTH),
             color=BLOCK_COLOR,
             name="block_step1",
             scaler=ctx0.scaler,
