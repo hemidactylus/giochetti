@@ -26,8 +26,8 @@ SKY_COLOR = (80, 130, 255, 255)
 
 GRAVITY_LMOD = 10
 
-# GRAVITY_CHANGE_MODE = "none"
-GRAVITY_CHANGE_MODE = "z"
+GRAVITY_CHANGE_MODE = "none"
+# GRAVITY_CHANGE_MODE = "z"
 # GRAVITY_CHANGE_MODE = "random"
 
 GRAVITY_CHANGE_CHANCE_PER_S = 0.3
@@ -391,8 +391,8 @@ if __name__ == "__main__":
     )
     ctx0.push_thing(
         RectangleBlock(
-            lpos=(14, 4),
-            lsize=(BORDER_BLOCK_WIDTH, 3),
+            lpos=(14, 3.7),
+            lsize=(BORDER_BLOCK_WIDTH, 3.3),
             color=BLOCK_COLOR,
             name="block_side1",
             scaler=ctx0.scaler,
@@ -400,7 +400,7 @@ if __name__ == "__main__":
     )
     ctx0.push_thing(
         RectangleBlock(
-            lpos=(12, 7),
+            lpos=(12.3, 7),
             lsize=(BORDER_BLOCK_WIDTH, 2),
             color=BLOCK_COLOR,
             name="block_side2",
@@ -409,10 +409,19 @@ if __name__ == "__main__":
     )
     ctx0.push_thing(
         RectangleBlock(
-            lpos=(10.3, 3.5),
+            lpos=(10.5, 3.5),
             lsize=(BORDER_BLOCK_WIDTH, 2),
             color=BLOCK_COLOR,
             name="block_side3",
+            scaler=ctx0.scaler,
+        )
+    )
+    ctx0.push_thing(
+        RectangleBlock(
+            lpos=(8.7, 6.5),
+            lsize=(BORDER_BLOCK_WIDTH, 2),
+            color=BLOCK_COLOR,
+            name="block_side4",
             scaler=ctx0.scaler,
         )
     )
