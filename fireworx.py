@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Literal
 
 import pyglet
@@ -19,7 +20,7 @@ BANANA_MODE = 0  # 1=banana, 2=various sprites
 BANANA_FACTOR = 10
 
 LSIZE = (16, 10)
-SIZE = (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 COLORS = [
     (0, 255, 0, 255),

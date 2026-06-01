@@ -1,3 +1,4 @@
+import sys
 from typing import Literal  # noqa: F401
 
 import pyglet
@@ -9,7 +10,7 @@ from egame.things import PhysicsThing, Thing  # noqa F821
 from egame.type_definitions import Color, FPair
 
 LSIZE = (16, 10)
-SIZE = (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 LRADIUS = 1
 BOUNCE_K = 0.75

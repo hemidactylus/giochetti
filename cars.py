@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from typing import Literal
 
@@ -12,6 +13,8 @@ from egame.type_definitions import Drawable, FPair, IPair
 
 SHOW_FOOD = True
 EMIT_POO = True
+
+SIZE = None if "f" in sys.argv[1:] else (1200, 1000)
 
 CAR_LSIZE = (2, 1.4)
 LSIZE = (12, 12)
@@ -255,7 +258,7 @@ class Label(Thing):
 
 
 if __name__ == "__main__":
-    ctx0 = Context(size=(1200, 1000), lsize=LSIZE, lg=(0.0, -10.0))
+    ctx0 = Context(size=SIZE, lsize=LSIZE, lg=(0.0, -10.0))
 
     car_chart_lpos = (
         i_mrnd(CHART_LSIZE[0]),

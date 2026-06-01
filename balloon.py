@@ -1,3 +1,4 @@
+import sys
 from typing import Literal
 
 import pyglet
@@ -10,7 +11,7 @@ from egame.things import PhysicsThing, Thing
 from egame.type_definitions import Drawable, FPair
 
 LSIZE = (16, 10)
-SIZE = (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 MIN_LRAD = 0.8
 MAX_LRAD = 2.0

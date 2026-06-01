@@ -1,3 +1,4 @@
+import sys
 from typing import Literal
 
 import pyglet
@@ -9,7 +10,7 @@ from egame.things import Thing
 from egame.type_definitions import FPair
 
 LSIZE = (16, 10)
-SIZE = (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 BLOCK_LSIZE = (1, 1)
 SPHERE_LRADIUS = 0.2

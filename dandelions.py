@@ -1,4 +1,5 @@
 import math
+import sys
 from typing import Literal
 
 import pyglet
@@ -10,7 +11,7 @@ from egame.things import Thing
 from egame.type_definitions import Drawable, FPair
 
 LSIZE = (16, 10)
-SIZE = (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 LAWN_COLOR = (70, 140, 70, 255)
 

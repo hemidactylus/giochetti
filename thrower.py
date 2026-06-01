@@ -1,5 +1,6 @@
 import math
 import os
+import sys
 from typing import Literal
 
 import pyglet
@@ -10,7 +11,7 @@ from egame.things import PhysicsThing, Thing
 from egame.type_definitions import FPair
 
 LSIZE = (18, 10)
-SIZE = None  # (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 THROWER_LSIZE = (0.5, 1.5)
 THROWER_LINE_LSIZE = 1.2
 THROWER_LINE_LWIDTH = 0.1

@@ -1,3 +1,4 @@
+import sys
 from typing import Literal
 
 import pyglet
@@ -8,7 +9,7 @@ from egame.things import Thing
 from egame.type_definitions import Color, FPair
 
 LSIZE = (9, 10)
-SIZE = (1600, 1000)
+SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
 
 class LabeledBlock(Thing):

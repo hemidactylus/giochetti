@@ -104,7 +104,7 @@ class Farmer(Thing):
         self.xdir = 1
         self.orient(0)
 
-    def orient(self, lvx: int) -> None:
+    def orient(self, lvx: float) -> None:
         xdir: int = 0
         if lvx > 0:
             xdir = 1
@@ -115,6 +115,7 @@ class Farmer(Thing):
             sprite_on = {0: "c", 1: "r", -1: "l"}[xdir]
             for k, v in self.sprites.items():
                 v.visible = k == sprite_on
+
 
 class Scenery(Thing):
     def __init__(self, scaler: Scaler) -> None:
