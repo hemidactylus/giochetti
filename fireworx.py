@@ -19,6 +19,8 @@ GEN_LC_DELTA = 0.35
 BANANA_MODE = 0  # 1=banana, 2=various sprites
 BANANA_FACTOR = 10
 
+CONSERVE_MOMENTUM_EXACTLY = True
+
 LSIZE = (16, 10)
 SIZE = None if "f" in sys.argv[1:] else (1600, 1000)
 
@@ -105,10 +107,22 @@ class Exploder(PhysicsThing):
                 else:
                     # TODO debug timescale, it's not s?
                     lc0 = GEN_LC_BASE - self.gen * GEN_LC_DELTA
-                for i in range(NUM_FRAGMENTS):
+                delta_v_sets = [
+                    (
+                        msrnd(DV_MOD),
+                        msrnd(DV_MOD),
+                    )
+                    for _ in range(NUM_FRAGMENTS)
+                ]
+                if CONSERVE_MOMENTUM_EXACTLY and NUM_FRAGMENTS > 1:
+                    # adjust to conserve momentum!
+                    sum_v_x = sum(vx for vx, _ in delta_v_sets[-1:])
+                    sum_v_y = sum(vy for _, vy in delta_v_sets[-1:])
+                    delta_v_sets[-1] = (-sum_v_x, -sum_v_y)
+                for i, dv in enumerate(delta_v_sets):
                     new_v = (
-                        self.lv[0] + msrnd(DV_MOD),
-                        self.lv[1] + msrnd(DV_MOD),
+                        self.lv[0] + dv[0],
+                        self.lv[1] + dv[1],
                     )
                     e0 = Exploder(
                         lpos=self.lpos,
