@@ -70,7 +70,7 @@ class Car(Thing):
             )
             the_label.visible = self.label_visible
             sprites["label"] = the_label
-            sprite_offsets["label"] = (0.5 * CAR_LSIZE[0], 0.7 * CAR_LSIZE[1])
+            sprite_offsets["label"] = (0.5 * CAR_LSIZE[0], 1.2 * CAR_LSIZE[1])
         Thing.__init__(
             self,
             lpos=chart_lpos,
