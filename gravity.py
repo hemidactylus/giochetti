@@ -17,7 +17,7 @@ PLAYER_LSIZE = (0.4, 0.7)
 PLAYER_NOSE_RADIUS = 0.1
 
 PLAYER_JUMP_VY = 6.5
-PLAYER_V = 4.5
+PLAYER_LV = 4.5
 
 BORDER_BLOCK_WIDTH = 0.35
 BLOCK_COLOR = (25, 90, 0, 255)
@@ -32,6 +32,13 @@ GRAVITY_CHANGE_MODE = "none"
 
 GRAVITY_CHANGE_CHANCE_PER_S = 0.3
 GRAVITY_REFRACTORY_TIME_S = 3
+
+SIMPLE_VEL_MANAGEMENT = True
+
+# if complex vel. management:
+PLAYER_LA = 3.0
+PLAYER_FRICTION_K = 0.01
+PLAYER_V_EPSILON = 0.01
 
 
 class Player(PhysicsThing):
@@ -469,20 +476,44 @@ if __name__ == "__main__":
                     update_gravity_dir(ctx, new_g_dir)
         # player motion:
         if player.anchored:
-            pl_rel_lvx = 0.0
-            if ctx.state["keys_map"].get(pyglet.window.key.LEFT):
-                pl_rel_lvx -= PLAYER_V
-            if ctx.state["keys_map"].get(pyglet.window.key.RIGHT):
-                pl_rel_lvx += PLAYER_V
-            # apply to actual velocity
-            if ctx.state["gravity_dir"] == 2:
-                player.lv = (player.lv[0], -pl_rel_lvx)
-            elif ctx.state["gravity_dir"] == 3:
-                player.lv = (pl_rel_lvx, player.lv[1])
-            elif ctx.state["gravity_dir"] == 0:
-                player.lv = (player.lv[0], pl_rel_lvx)
-            else:  # gravity_dir == 1
-                player.lv = (-pl_rel_lvx, player.lv[1])
+            if SIMPLE_VEL_MANAGEMENT:
+                pl_rel_lvx = 0.0
+                if ctx.state["keys_map"].get(pyglet.window.key.LEFT):
+                    pl_rel_lvx -= PLAYER_LV
+                if ctx.state["keys_map"].get(pyglet.window.key.RIGHT):
+                    pl_rel_lvx += PLAYER_LV
+                # apply to actual velocity
+                if ctx.state["gravity_dir"] == 2:
+                    player.lv = (player.lv[0], -pl_rel_lvx)
+                elif ctx.state["gravity_dir"] == 3:
+                    player.lv = (pl_rel_lvx, player.lv[1])
+                elif ctx.state["gravity_dir"] == 0:
+                    player.lv = (player.lv[0], pl_rel_lvx)
+                else:  # gravity_dir == 1
+                    player.lv = (-pl_rel_lvx, player.lv[1])
+            else:
+                pl_rel_lax = 0.0
+                if ctx.state["keys_map"].get(pyglet.window.key.LEFT):
+                    pl_rel_lax -= PLAYER_LA
+                if ctx.state["keys_map"].get(pyglet.window.key.RIGHT):
+                    pl_rel_lax += PLAYER_LA
+                # apply to actual velocity, + friction
+                if ctx.state["gravity_dir"] == 2:
+                    lfric = -PLAYER_FRICTION_K * player.lv[1]
+                    player.lv = (player.lv[0], player.lv[1] - dt * pl_rel_lax + lfric)
+                elif ctx.state["gravity_dir"] == 3:
+                    lfric = -PLAYER_FRICTION_K * player.lv[0]
+                    player.lv = (player.lv[0] + dt * pl_rel_lax + lfric, player.lv[1])
+                elif ctx.state["gravity_dir"] == 0:
+                    lfric = -PLAYER_FRICTION_K * player.lv[1]
+                    player.lv = (player.lv[0], player.lv[1] + dt * pl_rel_lax + lfric)
+                else:  # gravity_dir == 1
+                    lfric = -PLAYER_FRICTION_K * player.lv[0]
+                    player.lv = (player.lv[0] - dt * pl_rel_lax + lfric, player.lv[1])
+                player.lv = (
+                    player.lv[0] if abs(player.lv[0]) > PLAYER_V_EPSILON else 0.0,
+                    player.lv[1] if abs(player.lv[1]) > PLAYER_V_EPSILON else 0.0,
+                )
             player.orient(ctx.state["gravity_dir"], player.lv)
 
     ctx0.on_key_press(on_k_p)

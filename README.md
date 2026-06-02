@@ -68,7 +68,7 @@ Gira per il prato e soffia sui soffioni maturi. Tasti: Frecce, Spazio.
 
 ![gravity, screenshot](readme_images/gravity.png)
 
-La dinamica del classico "platformer", con una sorpresa. Modalità classica, cambio gravità manuale, cambio casuale. Tasti: Sinistra/Destra/Alto, Z (per cambio manuale gravità).
+La dinamica del classico "platformer", con una sorpresa. Modalità classica, cambio gravità manuale, cambio casuale. Movimento a velocità costante o basato su accelerazione/attrito. Tasti: Sinistra/Destra/Alto, Z (per cambio manuale gravità).
 
 ## planets
 
