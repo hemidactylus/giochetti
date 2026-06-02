@@ -75,3 +75,9 @@ La dinamica del classico "platformer", con una sorpresa. Modalità classica, cam
 ![planets, screenshot](readme_images/planets.png)
 
 Semplice simulazione di sistema solare. Sospendi e riavvia il moto dei pianeti con Spazio.
+
+## mazes
+
+![mazes, screenshot](readme_images/mazes.png)
+
+Trova la strada in un labirinto sempre diverso. Tasti: Frecce.

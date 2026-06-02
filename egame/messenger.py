@@ -10,6 +10,7 @@ class Messenger(Thing):
     label: pyglet.text.Label
     font_lsize: int
     font_color: Color
+    _text: str
 
     def __init__(
         self,
@@ -20,11 +21,12 @@ class Messenger(Thing):
         scaler: Scaler,
         context: Context,
     ) -> None:
+        self._text = text
         ctx_lsize = context.lsize
         self.font_lsize = font_lsize
         self.color = color
         self.label = pyglet.text.Label(
-            text,
+            self.text,
             font_name="Times New Roman",
             font_size=scaler.r_x(self.font_lsize),
             x=0,
@@ -43,5 +45,10 @@ class Messenger(Thing):
             scaler=scaler,
         )
 
+    @property
+    def text(self) -> str:
+        return self._text
+
     def set_text(self, text: str) -> None:
-        self.label.text = text
+        self._text = text
+        self.label.text = self.text
